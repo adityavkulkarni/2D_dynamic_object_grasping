@@ -289,7 +289,7 @@ if __name__ == "__main__":
     p.pose.position.z = trans[2] - 0.06 / 2 - 0.51 - 0.2
     scene.add_box("table", p, (1, 5, 1))
     
-    for i in range(10):
+    for i in range(25):
         # get the current joints
         joints = group.get_current_joint_values()
         # rospy.loginfo('current joint state of the robot')
