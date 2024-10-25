@@ -1,0 +1,8 @@
+# Ignore all files
+*
+
+# Don't ignore Python files
+!grasp.py
+!gripper.py
+!results.csv
+!results.ipynb
