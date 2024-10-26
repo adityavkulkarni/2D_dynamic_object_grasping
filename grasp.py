@@ -289,7 +289,7 @@ if __name__ == "__main__":
     p.pose.position.z = trans[2] - 0.06 / 2 - 0.51 - 0.2
     scene.add_box("table", p, (1, 5, 1))
     
-    for i in range(2):
+    for i in range(50):
         # get the current joints
         joints = group.get_current_joint_values()
         # rospy.loginfo('current joint state of the robot')
@@ -446,23 +446,25 @@ if __name__ == "__main__":
         rospy.loginfo(f"RESULTS: ")
         print(f"Estimated time from init pose to above cube: {result[0]} s")
         print(f"Time to move from init pose to above cube: {result[1]} s")
-        print(f"Differnce: {result[2]}")
+        print(f"Difference: {result[2]}")
         print(f"Estimated time time for grasp {result[3]} s")
         print(f"Time to move to grasp the cube: {result[4]} s")
-        print(f"Differnce: {result[5]}")
+        print(f"Difference: {result[5]}")
         print(f"Time to grip the cube: {result[6]} s")
         print(f"Estimated time to lift cube: {result[7]} s")
         print(f"Time to lift cube: {result[8]} s")
-        print(f"Differnce: {result[9]}")
+        print(f"Difference: {result[9]}")
         print(f"Grasp status: {result[10]}")
     
     pd.DataFrame(results, columns=[
-        "Estimate_init_pregrasp", "Time_init_pregrasp", "Differnce_init_pregrasp",
-        "Estimate_pregrasp_grasp", "Time_pregrasp_grasp", "Differnce_pregrasp_grasp",
+        "Estimate_init_pregrasp", "Time_init_pregrasp", "Difference_init_pregrasp",
+        "Estimate_pregrasp_grasp", "Time_pregrasp_grasp", "Difference_pregrasp_grasp",
         "Time_grip",
-        "Estimate_grasp_postgrasp", "Time_grasp_postgrasp", "Differnce_grasp_postgrasp",
+        "Estimate_grasp_postgrasp", "Time_grasp_postgrasp", "Difference_grasp_postgrasp",
         "Grasp"
     ]).to_csv("results.csv")
     
 
     time.sleep(10)
+    rospy.signal_shutdown()
+
