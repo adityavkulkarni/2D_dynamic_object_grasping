@@ -189,6 +189,7 @@ def get_track_ik_solution(seed_state, trans, rotated_qt):
     retry = 30    
     sol = None
     while sol is None:
+        # multithread and random state
         sol = ik_solver.get_ik(seed_state,
                         trans[0], trans[1], trans[2],
                         rotated_qt[0], rotated_qt[1], rotated_qt[2], rotated_qt[3])
@@ -236,7 +237,7 @@ if __name__ == "__main__":
     
     # # Setup clients
     torso_action = FollowTrajectoryClient("torso_controller", ["torso_lift_joint"])
-    
+
     # Raise the torso using just a controller
     rospy.loginfo("Raising torso")
     torso_action.move_to([0.4, ])
@@ -244,8 +245,15 @@ if __name__ == "__main__":
     # --------- initialize moveit components ------
     moveit_commander.roscpp_initialize(sys.argv)
     group = moveit_commander.MoveGroupCommander('arm')
-    group.set_max_velocity_scaling_factor(0.6)
-    group.set_max_acceleration_scaling_factor(0.6)
+    group.set_max_velocity_scaling_factor(0.8)
+    group.set_max_acceleration_scaling_factor(0.8)
+    
+    gripper_group = moveit_commander.MoveGroupCommander('gripper')
+    gripper_group.set_max_velocity_scaling_factor(1)
+    gripper_group.set_max_acceleration_scaling_factor(1)
+    pos_cur = [0, 0]
+    gripper_group.set_joint_value_target(pos_cur)
+    gripper_close_plan = gripper_group.plan()
     # planning scene
     scene = moveit_commander.PlanningSceneInterface()
     scene.clear()
@@ -289,7 +297,7 @@ if __name__ == "__main__":
     p.pose.position.z = trans[2] - 0.06 / 2 - 0.51 - 0.2
     scene.add_box("table", p, (1, 5, 1))
     
-    for i in range(50):
+    for i in range(1):
         # get the current joints
         joints = group.get_current_joint_values()
         # rospy.loginfo('current joint state of the robot')
@@ -393,8 +401,11 @@ if __name__ == "__main__":
         ts3 = get_gazebo_timestamp()
         group.execute(plan[1].joint_trajectory)
         group.stop()
+        
         ts4 = get_gazebo_timestamp()
-        gripper.close()
+        gripper_group.execute(gripper_close_plan[1].joint_trajectory)
+        gripper_group.stop()
+        # gripper.close()
         ts_gripper = get_gazebo_timestamp()
 
         """ts3 = get_gazebo_timestamp()
@@ -432,10 +443,16 @@ if __name__ == "__main__":
         rospy.loginfo(f"Iteration: {i+1} Grasp status: {grasp_status}")
         results.append(
             (
-                estimated_duration_pose, (ts2 - ts1).to_sec(), ((ts2 - ts1).to_sec())- estimated_duration_pose, 
-                estimated_duration_grasp, (ts4 - ts3).to_sec(), ((ts4 - ts3).to_sec()) - estimated_duration_grasp, 
-                (ts_gripper - ts4).to_sec(),
-                estimated_duration_pose_rev, (ts2_rev - ts1_rev).to_sec(), ((ts2_rev - ts1_rev).to_sec())- estimated_duration_pose_rev,
+                estimated_duration_pose, 
+                (ts2 - ts1).to_sec(), 
+                ((ts2 - ts1).to_sec())- estimated_duration_pose, 
+                estimated_duration_grasp, 
+                (ts4 - ts3).to_sec(), 
+                ((ts4 - ts3).to_sec()) - estimated_duration_grasp, 
+                (ts_gripper - ts4).to_sec(), 
+                estimated_duration_pose_rev, 
+                (ts2_rev - ts1_rev).to_sec(), 
+                ((ts2_rev - ts1_rev).to_sec())- estimated_duration_pose_rev,
                 grasp_status
             ))
         time.sleep(5)
@@ -455,16 +472,19 @@ if __name__ == "__main__":
         print(f"Time to lift cube: {result[8]} s")
         print(f"Difference: {result[9]}")
         print(f"Grasp status: {result[10]}")
-    
-    pd.DataFrame(results, columns=[
-        "Estimate_init_pregrasp", "Time_init_pregrasp", "Difference_init_pregrasp",
-        "Estimate_pregrasp_grasp", "Time_pregrasp_grasp", "Difference_pregrasp_grasp",
-        "Time_grip",
-        "Estimate_grasp_postgrasp", "Time_grasp_postgrasp", "Difference_grasp_postgrasp",
+    columns=[
+        "Estimate_init_pregrasp", 
+        "Time_init_pregrasp", 
+        "Difference_init_pregrasp",
+        "Estimate_pregrasp_grasp", 
+        "Time_pregrasp_grasp", 
+        "Difference_pregrasp_grasp",
+        "Time_grip", 
+        "Estimate_grasp_postgrasp", 
+        "Time_grasp_postgrasp", 
+        "Difference_grasp_postgrasp",
         "Grasp"
-    ]).to_csv("results.csv")
-    
-
-    time.sleep(10)
-    rospy.signal_shutdown()
+    ]
+    pd.DataFrame(results, columns=columns).to_csv("results.csv")
+    rospy.signal_shutdown("")
 
