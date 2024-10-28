@@ -312,12 +312,12 @@ if __name__ == "__main__":
 
     # Move directly initial pose
     trans_1 = [trans[0], trans[1], trans[2] + 0.5]
-    sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
-    joint_goal_init = sol1[1:]
+    sol_init = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
+    seed_state = sol_init
+    joint_goal_init = sol_init[1:]
     group.set_joint_value_target(joint_goal_init)
-    plan = group.plan()
-    trajectory = plan[1].joint_trajectory
-    group.execute(plan[1].joint_trajectory)
+    plan_init = group.plan()
+    group.execute(plan_init[1].joint_trajectory)
     group.stop()
     
     results = []
@@ -344,24 +344,22 @@ if __name__ == "__main__":
     
         ts_move_1 = get_gazebo_timestamp()
         # Plan
-        joint_goal = sol1[1:]
-        group.set_joint_value_target(joint_goal)
-        plan = group.plan()
-        trajectory = plan[1].joint_trajectory
-        estimated_duration_pose = trajectory.points[-1].time_from_start.to_sec()
+        joint_goal1 = sol1[1:]
+        group.set_joint_value_target(joint_goal1)
+        plan1 = group.plan()
+        estimated_duration_pose = plan1[1].joint_trajectory.points[-1].time_from_start.to_sec()
 
         # move to above the cube
-        group.execute(plan[1].joint_trajectory)
+        group.execute(plan1[1].joint_trajectory)
         group.stop()
 
-        joint_goal = sol2[1:]
-        group.set_joint_value_target(joint_goal)
-        plan = group.plan()
-        trajectory = plan[1].joint_trajectory
-        estimated_duration_grasp = trajectory.points[-1].time_from_start.to_sec()
+        joint_goal2 = sol2[1:]
+        group.set_joint_value_target(joint_goal2)
+        plan2 = group.plan()
+        estimated_duration_grasp = plan2[1].joint_trajectory.points[-1].time_from_start.to_sec()
 
         # move to grasp the cube
-        group.execute(plan[1].joint_trajectory)
+        group.execute(plan2[1].joint_trajectory)
         group.stop()
         
         ts_move_2 = get_gazebo_timestamp()
@@ -370,19 +368,20 @@ if __name__ == "__main__":
         gripper_open_plan = gripper_group.plan()
         gripper_group.execute(gripper_close_plan[1].joint_trajectory)
         gripper_group.stop()
+
         ts_grip = get_gazebo_timestamp()
 
         # Pick the cube
         seed_state = sol2
         trans_1 = [trans[0], trans[1], trans[2] + 0.5]
-        sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
-        joint_goal = sol1[1:]
+        sol3 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
+        joint_goal = sol3[1:]
         group.set_joint_value_target(joint_goal)
-        plan = group.plan()
-        trajectory = plan[1].joint_trajectory
+        plan3 = group.plan()
+        trajectory = plan3[1].joint_trajectory
         estimated_duration_pose_rev = trajectory.points[-1].time_from_start.to_sec()
 
-        group.execute(plan[1].joint_trajectory)
+        group.execute(plan3[1].joint_trajectory)
         group.stop()
         ts_final2 = get_gazebo_timestamp()
 
