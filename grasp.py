@@ -168,8 +168,14 @@ class FollowTrajectoryClient(object):
         self.client.wait_for_result()    
 
 
+position_list = []
 def set_cube_random(box_pose):
-    box_pose.position.y = random_float()
+    global position_list
+    x = random_float()
+    while x in position_list:
+        x = random_float()
+    position_list.append(x)
+    box_pose.position.y = x
     set_model_pose("demo_cube", box_pose)
 
 
@@ -394,7 +400,7 @@ if __name__ == "__main__":
                 "grasp_status": grasp_status,
                 "total_time": (ts_final2 - ts_final).to_sec(),
                 "solution_time_sim": (ts_sol2 - ts_sol1).to_sec(),
-                "solution_time_real": (ts_sol_r2 - ts_sol_r1).to_sec(),
+                "solution_time_real": ts_sol_r2 - ts_sol_r1,
                 "grasp_pose_time": (ts_move_2 - ts_move_1).to_sec(),
                 "grasp_pose_estimate": (estimated_duration_grasp + estimated_duration_pose),
                 "offset": ((ts_move_2 - ts_move_1).to_sec() - (estimated_duration_grasp + estimated_duration_pose)),
