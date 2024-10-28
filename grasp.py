@@ -310,22 +310,15 @@ if __name__ == "__main__":
     # Extract the rotated quaternion
     rotated_qt = mat2quat(T_rotated[:3, :3])
 
-    # Move directly above the cube
+    # Move directly initial pose
     trans_1 = [trans[0], trans[1], trans[2] + 0.5]
     sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
-    # move to the joint goal
     joint_goal_init = sol1[1:]
-
-    # Retrieve estimated duration from the planned trajectory
     group.set_joint_value_target(joint_goal_init)
     plan = group.plan()
     trajectory = plan[1].joint_trajectory
-    # estimated_duration_pose = trajectory.points[-1].time_from_start.to_sec()
-
-    # ts1 = get_gazebo_timestamp()
     group.execute(plan[1].joint_trajectory)
     group.stop()
-    # ts2 = get_gazebo_timestamp()
     
     results = []
     rospy.sleep(3.0)
@@ -335,11 +328,12 @@ if __name__ == "__main__":
         trans = T[:3, 3]
         print(f"Iteration {i+1}: Cube postion = {trans}")
 
-        # Move directly above the cube
-        trans_1 = [trans[0], trans[1], trans[2] + 0.5]
+        ts_final = get_gazebo_timestamp()
         ts_sol1 = get_gazebo_timestamp()
         ts_sol_r1 = time.time()
 
+        # Move directly above the cube
+        trans_1 = [trans[0], trans[1], trans[2] + 0.5]
         sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
         seed_state = sol1
         trans_1 = [trans[0], trans[1], trans[2] + 0.2]
@@ -347,85 +341,67 @@ if __name__ == "__main__":
         
         ts_sol2 = get_gazebo_timestamp()
         ts_sol_r2 = time.time()
-        # move to the joint goal
+    
+        ts_move_1 = get_gazebo_timestamp()
+        # Plan
         joint_goal = sol1[1:]
-
-        # Retrieve estimated duration from the planned trajectory
         group.set_joint_value_target(joint_goal)
         plan = group.plan()
         trajectory = plan[1].joint_trajectory
         estimated_duration_pose = trajectory.points[-1].time_from_start.to_sec()
 
-        ts1 = get_gazebo_timestamp()
-        group.execute(plan[1].joint_trajectory)
-        group.stop()
-        ts2 = get_gazebo_timestamp()
-        # move down to contact the cube
-
-        """seed_state = sol1
-        trans_1 = [trans[0], trans[1], trans[2] + 0.2]
-        ts_sol1 = get_gazebo_timestamp()
-        ts_sol_r1 = time.time()
-        sol2 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
-        ts_sol2 = get_gazebo_timestamp()
-        ts_sol_r2 = time.time()"""
-        
-        # move to the joint goal
         joint_goal = sol2[1:]
-        # Retrieve estimated duration from the planned trajectory
         group.set_joint_value_target(joint_goal)
         plan = group.plan()
         trajectory = plan[1].joint_trajectory
         estimated_duration_grasp = trajectory.points[-1].time_from_start.to_sec()
-        
-        ts3 = get_gazebo_timestamp()
+
+        # move to above the cube
+        group.execute(plan[1].joint_trajectory)
+        group.stop()
+
+        # move to grasp the cube
         group.execute(plan[1].joint_trajectory)
         group.stop()
         
-        ts4 = get_gazebo_timestamp()
+        ts_move_2 = get_gazebo_timestamp()
+
         gripper_group.set_joint_value_target(pos_close)
         gripper_open_plan = gripper_group.plan()
         gripper_group.execute(gripper_close_plan[1].joint_trajectory)
         gripper_group.stop()
-        # gripper.close()
-        ts_gripper = get_gazebo_timestamp()
+        ts_grip = get_gazebo_timestamp()
 
+        # Pick the cube
         seed_state = sol2
         trans_1 = [trans[0], trans[1], trans[2] + 0.5]
         sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
         joint_goal = sol1[1:]
-
-        # Retrieve estimated duration from the planned trajectory
         group.set_joint_value_target(joint_goal)
         plan = group.plan()
         trajectory = plan[1].joint_trajectory
         estimated_duration_pose_rev = trajectory.points[-1].time_from_start.to_sec()
 
-        ts1_rev = get_gazebo_timestamp()
         group.execute(plan[1].joint_trajectory)
         group.stop()
-        ts2_rev = get_gazebo_timestamp()
-
+        ts_final2 = get_gazebo_timestamp()
 
         cur_T, cur_fetch_pose, cur_box_pose = get_pose_gazebo(model_name)
         grasp_status = 'SUCCESS' if round(cur_T[2][3] - T[2][3], 1) == 0.3 else 'FAIL'
         rospy.loginfo(f"Iteration: {i+1} Grasp status: {grasp_status}")
         results.append(
-            ( 
-                estimated_duration_grasp, 
-                (ts4 - ts3).to_sec(), 
-                ((ts4 - ts3).to_sec()) - estimated_duration_grasp, 
-                (ts_gripper - ts4).to_sec(), 
-                estimated_duration_pose_rev, 
-                (ts2_rev - ts1_rev).to_sec(), 
-                ((ts2_rev - ts1_rev).to_sec())- estimated_duration_pose_rev,
-                grasp_status,
-                (ts_sol2-ts_sol1).to_sec(),
-                (ts_sol_r2 -ts_sol_r1),
-                estimated_duration_pose,
-                (ts2 - ts1).to_sec(), 
-                ((ts2 - ts1).to_sec()) - estimated_duration_grasp
-            ))
+            {
+                "iteration": i+1, 
+                "grasp_status": grasp_status,
+                "total_time": (ts_final2 - ts_final).to_sec(),
+                "solution_time_sim": (ts_sol2 - ts_sol1).to_sec(),
+                "solution_time_real": (ts_sol2 - ts_sol1).to_sec(),
+                "grasp_pose_time": (ts_move_2 - ts_move_1).to_sec(),
+                "grasp_pose_estimate": (estimated_duration_grasp + estimated_duration_pose)
+                "offset": ((ts_move_2 - ts_move_1).to_sec() - (estimated_duration_grasp + estimated_duration_pose))
+                "grip_time": (ts_grip - ts_move_2).to_sec()
+            }
+            )
         time.sleep(5)
         reset_objects()
         group.set_joint_value_target(joint_goal_init)
@@ -442,34 +418,15 @@ if __name__ == "__main__":
     
     for result in results:
         rospy.loginfo(f"RESULTS: ")
-        print(f"Time for calculating solution(sim): {result[8]}")
-        print(f"Time for calculating solution(real): {result[9]}")
-        print(f"Estimated time time for pregrasp {result[0]} s")
-        print(f"Time to move to pregrasp: {result[1]} s")
-        print(f"Difference: {result[2]}")
-        print(f"Estimated time time for grasp {result[0]} s")
-        print(f"Time to move to grasp the cube: {result[1]} s")
-        print(f"Difference: {result[2]}")
-        print(f"Time to grip the cube: {result[3]} s")
-        print(f"Estimated time to lift cube: {result[4]} s")
-        print(f"Time to lift cube: {result[5]} s")
-        print(f"Difference: {result[6]}")
-        print(f"Grasp status: {result[7]}")
-    columns=[
-        "Estimate_pregrasp_grasp", 
-        "Time_pregrasp_grasp", 
-        "Difference_pregrasp_grasp",
-        "Time_grip", 
-        "Estimate_grasp_postgrasp", 
-        "Time_grasp_postgrasp", 
-        "Difference_grasp_postgrasp",
-        "Grasp",
-        "Solution_time_sim",
-        "Solution_time_real",
-        "Estimate_init_pregrasp", 
-        "Time_init_pregrasp", 
-        "Difference_init_pregrasp"
-    ]
-    pd.DataFrame(results, columns=columns).to_csv("results.csv")
+        print(f'Iteration: {result["iteration"]}')
+        print(f'Grasp Status: {result["grasp_status"]}')
+        print(f'Total Time: {result["total_time"]}')
+        print(f'Solution calculation Time(sim): {result["solution_time_sim"]}')
+        print(f'Solution calculation Time(real): {result["solution_time_real"]}')
+        print(f'Pregrasp Movement Time: {result["grasp_pose_time"]}')
+        print(f'Pregrasp Movement Estimate: {result["grasp_pose_estimate"]}')
+        print(f'Pregrasp Movement Offset: {result["offset"]}')
+        print(f'Gripping Time: {result["grip_time"]}')
+    pd.DataFrame(results).to_csv("results.csv")
     rospy.signal_shutdown("")
 
