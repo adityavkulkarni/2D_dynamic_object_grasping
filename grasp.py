@@ -166,18 +166,8 @@ def set_model_pose(model_name, pose):
     try:
         set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
         # Create a ModelState object
- 
-
         model_state = ModelState()
         model_state.model_name = model_name
-        """model_state.pose.position.x = 0.6
-        model_state.pose.position.y = 0.1
-        model_state.pose.position.z = 0.72433349956864
-
-        model_state.pose.orientation.x = 2.6742690478262186e-15
-        model_state.pose.orientation.y = -7.813298653223138e-16
-        model_state.pose.orientation.z = -1.134997195467295e-15
-        model_state.pose.orientation.w = 1"""
         model_state.pose = pose
         # Call the service
         response = set_state(model_state)
@@ -206,7 +196,7 @@ def reset_objects():
     set_model_pose("demo_cube", box_pose)
     set_model_pose("fetch", fetch_pose)
     group.go(joints, wait=True)
-    gripper.open()
+    # gripper.open()
     group.stop()
 
 
@@ -232,8 +222,8 @@ if __name__ == "__main__":
     x.start()
     
     # gripper controller
-    gripper = Gripper()
-    gripper.open()
+    # gripper = Gripper()
+    # gripper.open()
     
     # # Setup clients
     torso_action = FollowTrajectoryClient("torso_controller", ["torso_lift_joint"])
@@ -251,9 +241,18 @@ if __name__ == "__main__":
     gripper_group = moveit_commander.MoveGroupCommander('gripper')
     gripper_group.set_max_velocity_scaling_factor(1)
     gripper_group.set_max_acceleration_scaling_factor(1)
-    pos_cur = [0, 0]
-    gripper_group.set_joint_value_target(pos_cur)
+
+    pos_close = [0, 0]
+    gripper_group.set_joint_value_target(pos_close)
     gripper_close_plan = gripper_group.plan()
+
+    pos_open = [0.5, 0.5]
+    gripper_group.set_joint_value_target(pos_open)
+    gripper_open_plan = gripper_group.plan()
+
+    gripper_group.execute(gripper_open_plan[1].joint_trajectory)
+    gripper_group.stop()
+
     # planning scene
     scene = moveit_commander.PlanningSceneInterface()
     scene.clear()
@@ -297,98 +296,58 @@ if __name__ == "__main__":
     p.pose.position.z = trans[2] - 0.06 / 2 - 0.51 - 0.2
     scene.add_box("table", p, (1, 5, 1))
     
+    joints = group.get_current_joint_values()
+        
+    # define the IK solver from track_ik
+    ik_solver = IK("base_link", "wrist_roll_link")
+    
+    # change the joint limit of torso_lift_joint in order to fix the torso lift
+    lower_bound, upper_bound = ik_solver.get_joint_limits()
+    lower_bound = list(lower_bound)
+    upper_bound = list(upper_bound)
+    lower_bound[0] = 0.4
+    upper_bound[0] = 0.4
+    ik_solver.set_joint_limits(lower_bound, upper_bound)
+
+    # use initial seed as zeros
+    seed_state = [0.0] * ik_solver.number_of_joints
+    seed_state[0] = 0.4
+    
+    # Convert 90 degrees to radians
+    angle = np.pi / -2
+
+    # Create the rotation matrix for 90 degrees about the y-axis
+    rotation_matrix = rotY(angle)
+
+    # Apply the rotation to the transformation matrix T
+    T_rotated = np.dot(rotation_matrix, T)
+
+    # Extract the rotated quaternion
+    rotated_qt = mat2quat(T_rotated[:3, :3])
+
+    # Move directly above the cube
+    trans_1 = [trans[0], trans[1], trans[2] + 0.5]
+    sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
+    # move to the joint goal
+    joint_goal = sol1[1:]
+
+    # Retrieve estimated duration from the planned trajectory
+    group.set_joint_value_target(joint_goal)
+    plan = group.plan()
+    trajectory = plan[1].joint_trajectory
+    # estimated_duration_pose = trajectory.points[-1].time_from_start.to_sec()
+
+    # ts1 = get_gazebo_timestamp()
+    group.execute(plan[1].joint_trajectory)
+    group.stop()
+    # ts2 = get_gazebo_timestamp()
+    
+    rospy.sleep(3.0)
     for i in range(1):
-        # get the current joints
-        joints = group.get_current_joint_values()
-        # rospy.loginfo('current joint state of the robot')
-        # print(group.get_active_joints())
-        # print(joints)
-        
-        # define the IK solver from track_ik
-        ik_solver = IK("base_link", "wrist_roll_link")
-        
-        # change the joint limit of torso_lift_joint in order to fix the torso lift
-        lower_bound, upper_bound = ik_solver.get_joint_limits()
-        lower_bound = list(lower_bound)
-        upper_bound = list(upper_bound)
-        lower_bound[0] = 0.4
-        upper_bound[0] = 0.4
-        ik_solver.set_joint_limits(lower_bound, upper_bound)
-
-        # use initial seed as zeros
-        seed_state = [0.0] * ik_solver.number_of_joints
-        seed_state[0] = 0.4
-        
-        ################ TO DO ##########################
-        # use the get_ik function from trac_ik to compute the joints of the robot for grasping the cube
-        # return the solution to a "sol" variable
-        # Refer to https://bitbucket.org/traclabs/trac_ik/src/master/trac_ik_python/
-            # Convert 90 degrees to radians
-        angle = np.pi / -2
-
-        # Create the rotation matrix for 90 degrees about the y-axis
-        rotation_matrix = rotY(angle)
-
-        # Apply the rotation to the transformation matrix T
-        T_rotated = np.dot(rotation_matrix, T)
-
-        # Extract the rotated quaternion
-        rotated_qt = mat2quat(T_rotated[:3, :3])
-
-        # Move directly above the cube
-        """retry = 30    
-        sol = None
-        while sol is None:
-            sol = ik_solver.get_ik(seed_state,
-                            trans[0], trans[1], trans[2] + 0.5,
-                            rotated_qt[0], rotated_qt[1], rotated_qt[2], rotated_qt[3])
-            rospy.loginfo('Solution from IK:')
-            print(ik_solver.joint_names)                
-            print(sol)
-            if sol: break
-            retry -= 1 """
-        trans_1 = [trans[0], trans[1], trans[2] + 0.5]
-        sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
-        # move to the joint goal
-        joint_goal = sol1[1:]
-
-        # Retrieve estimated duration from the planned trajectory
-        group.set_joint_value_target(joint_goal)
-        plan = group.plan()
-        trajectory = plan[1].joint_trajectory
-        estimated_duration_pose = trajectory.points[-1].time_from_start.to_sec()
-
-        ts1 = get_gazebo_timestamp()
-        group.execute(plan[1].joint_trajectory)
-        group.stop()
-        ts2 = get_gazebo_timestamp()
-
-        """ts1 = get_gazebo_timestamp()
-        group.go(joint_goal, wait=True)
-        group.stop()
-        ts2 = get_gazebo_timestamp()"""
-
-        # rospy.loginfo("Moved directly above cube")
-        
-        rospy.sleep(3.0)
-
         # move down to contact the cube
-        """
-        retry = 30
-        sol = None
-        while sol is None:
-            sol = ik_solver.get_ik(seed_state,
-                            trans[0], trans[1], trans[2] + 0.2,
-                            rotated_qt[0], rotated_qt[1], rotated_qt[2], rotated_qt[3])
-            rospy.loginfo('Solution from IK:')
-            print(ik_solver.joint_names)                
-            print(sol)
-            if sol: break
-            retry -= 1"""
         seed_state = sol1
         trans_1 = [trans[0], trans[1], trans[2] + 0.2]
         sol2 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
-        ################ TO DO ##########################
         
         # move to the joint goal
         joint_goal = sol2[1:]
@@ -408,14 +367,6 @@ if __name__ == "__main__":
         # gripper.close()
         ts_gripper = get_gazebo_timestamp()
 
-        """ts3 = get_gazebo_timestamp()
-
-        group.go(joint_goal, wait=True)
-        # Calling ``stop()`` ensures that there is no residual movement
-        group.stop()
-        # close gripper
-        gripper.close()
-        ts4 = get_gazebo_timestamp()"""
         seed_state = sol2
         trans_1 = [trans[0], trans[1], trans[2] + 0.5]
         sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
@@ -432,20 +383,12 @@ if __name__ == "__main__":
         group.stop()
         ts2_rev = get_gazebo_timestamp()
 
-        # move back
-        # group.go(joints, wait=True)
-        # group.stop()
-        # ts5 = get_gazebo_timestamp()
 
         cur_T, cur_fetch_pose, cur_box_pose = get_pose_gazebo(model_name)
-        # print(f"Current Box: \n{cur_T}\nPrev Box:{T}\nZ-diff: {cur_T[2][3] - T[2][3]}")
         grasp_status = 'SUCCESS' if round(cur_T[2][3] - T[2][3], 1) == 0.3 else 'FAIL'
         rospy.loginfo(f"Iteration: {i+1} Grasp status: {grasp_status}")
         results.append(
-            (
-                estimated_duration_pose, 
-                (ts2 - ts1).to_sec(), 
-                ((ts2 - ts1).to_sec())- estimated_duration_pose, 
+            ( 
                 estimated_duration_grasp, 
                 (ts4 - ts3).to_sec(), 
                 ((ts4 - ts3).to_sec()) - estimated_duration_grasp, 
@@ -457,13 +400,12 @@ if __name__ == "__main__":
             ))
         time.sleep(5)
         reset_objects()
+        gripper_group.execute(gripper_open_plan[1].joint_trajectory)
+        gripper_group.stop()
         time.sleep(2)
     
     for result in results:
         rospy.loginfo(f"RESULTS: ")
-        print(f"Estimated time from init pose to above cube: {result[0]} s")
-        print(f"Time to move from init pose to above cube: {result[1]} s")
-        print(f"Difference: {result[2]}")
         print(f"Estimated time time for grasp {result[3]} s")
         print(f"Time to move to grasp the cube: {result[4]} s")
         print(f"Difference: {result[5]}")
@@ -473,9 +415,6 @@ if __name__ == "__main__":
         print(f"Difference: {result[9]}")
         print(f"Grasp status: {result[10]}")
     columns=[
-        "Estimate_init_pregrasp", 
-        "Time_init_pregrasp", 
-        "Difference_init_pregrasp",
         "Estimate_pregrasp_grasp", 
         "Time_pregrasp_grasp", 
         "Difference_pregrasp_grasp",
