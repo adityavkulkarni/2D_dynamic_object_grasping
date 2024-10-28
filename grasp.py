@@ -346,22 +346,22 @@ if __name__ == "__main__":
         # Plan
         joint_goal = sol1[1:]
         group.set_joint_value_target(joint_goal)
-        plan_1 = group.plan()
+        plan = group.plan()
         trajectory = plan[1].joint_trajectory
         estimated_duration_pose = trajectory.points[-1].time_from_start.to_sec()
 
+        # move to above the cube
+        group.execute(plan[1].joint_trajectory)
+        group.stop()
+
         joint_goal = sol2[1:]
         group.set_joint_value_target(joint_goal)
-        plan_2 = group.plan()
+        plan = group.plan()
         trajectory = plan[1].joint_trajectory
         estimated_duration_grasp = trajectory.points[-1].time_from_start.to_sec()
 
-        # move to above the cube
-        group.execute(plan_1[1].joint_trajectory)
-        group.stop()
-
         # move to grasp the cube
-        group.execute(plan_2[1].joint_trajectory)
+        group.execute(plan[1].joint_trajectory)
         group.stop()
         
         ts_move_2 = get_gazebo_timestamp()
