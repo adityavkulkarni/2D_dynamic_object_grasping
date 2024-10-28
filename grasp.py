@@ -409,7 +409,6 @@ if __name__ == "__main__":
             }
             )
         time.sleep(5)
-        reset_objects()
         gripper_group.set_joint_value_target(pos_open)
         gripper_open_plan = gripper_group.plan()
         gripper_group.execute(gripper_open_plan[1].joint_trajectory)
@@ -418,6 +417,7 @@ if __name__ == "__main__":
         plan_init = group.plan()
         group.execute(plan_init[1].joint_trajectory)
         group.stop()
+        reset_objects()
         time.sleep(2)
     
     for result in results:
