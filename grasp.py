@@ -401,6 +401,7 @@ if __name__ == "__main__":
                 "total_time": (ts_final2 - ts_final).to_sec(),
                 "solution_time_sim": (ts_sol2 - ts_sol1).to_sec(),
                 "solution_time_real": ts_sol_r2 - ts_sol_r1,
+                "solution_time_offset": (ts_sol_r2 - ts_sol_r1) - ((ts_sol2 - ts_sol1).to_sec()),
                 "grasp_pose_time": (ts_move_2 - ts_move_1).to_sec(),
                 "grasp_pose_estimate": (estimated_duration_grasp + estimated_duration_pose),
                 "offset": ((ts_move_2 - ts_move_1).to_sec() - (estimated_duration_grasp + estimated_duration_pose)),
@@ -426,6 +427,7 @@ if __name__ == "__main__":
         print(f'Total Time: {result["total_time"]}')
         print(f'Solution calculation Time(sim): {result["solution_time_sim"]}')
         print(f'Solution calculation Time(real): {result["solution_time_real"]}')
+        print(f'Solution calculation Time(diff): {result["solution_time_offset"]}')
         print(f'Pregrasp Movement Time: {result["grasp_pose_time"]}')
         print(f'Pregrasp Movement Estimate: {result["grasp_pose_estimate"]}')
         print(f'Pregrasp Movement Offset: {result["offset"]}')
