@@ -38,7 +38,7 @@ def get_gazebo_timestamp():
     return clock_msg.clock
 
 
-def random_float(start=-0.4, end=-0.4, multiple=0.01):
+def random_float(start=-0.4, end=0.4, multiple=0.01):
     # Calculate the number of multiples
     range_start = int(start / multiple)
     range_end = int(end / multiple)
@@ -333,16 +333,25 @@ if __name__ == "__main__":
         set_cube_random(box_pose)
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
-        print(f"T=\n{T}")
+        print(f"Iteration {i+1}: Cube postion = {trans}")
 
         # Move directly above the cube
         trans_1 = [trans[0], trans[1], trans[2] + 0.5]
-        sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
+        ts_sol1 = get_gazebo_timestamp()
+        ts_sol_r1 = time.time()
+
+        sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
+        seed_state = sol1
+        trans_1 = [trans[0], trans[1], trans[2] + 0.2]
+        sol2 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
+        
+        ts_sol2 = get_gazebo_timestamp()
+        ts_sol_r2 = time.time()
         # move to the joint goal
-        joint_goal_init = sol1[1:]
+        joint_goal = sol1[1:]
 
         # Retrieve estimated duration from the planned trajectory
-        group.set_joint_value_target(joint_goal_init)
+        group.set_joint_value_target(joint_goal)
         plan = group.plan()
         trajectory = plan[1].joint_trajectory
         estimated_duration_pose = trajectory.points[-1].time_from_start.to_sec()
@@ -353,13 +362,13 @@ if __name__ == "__main__":
         ts2 = get_gazebo_timestamp()
         # move down to contact the cube
 
-        seed_state = sol1
+        """seed_state = sol1
         trans_1 = [trans[0], trans[1], trans[2] + 0.2]
         ts_sol1 = get_gazebo_timestamp()
         ts_sol_r1 = time.time()
         sol2 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
         ts_sol2 = get_gazebo_timestamp()
-        ts_sol_r2 = time.time()
+        ts_sol_r2 = time.time()"""
         
         # move to the joint goal
         joint_goal = sol2[1:]
