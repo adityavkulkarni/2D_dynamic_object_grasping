@@ -322,7 +322,7 @@ if __name__ == "__main__":
     
     results = []
     rospy.sleep(3.0)
-    for i in range(30):
+    for i in range(2):
         set_cube_random(box_pose)
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
@@ -397,8 +397,8 @@ if __name__ == "__main__":
                 "solution_time_sim": (ts_sol2 - ts_sol1).to_sec(),
                 "solution_time_real": (ts_sol2 - ts_sol1).to_sec(),
                 "grasp_pose_time": (ts_move_2 - ts_move_1).to_sec(),
-                "grasp_pose_estimate": (estimated_duration_grasp + estimated_duration_pose)
-                "offset": ((ts_move_2 - ts_move_1).to_sec() - (estimated_duration_grasp + estimated_duration_pose))
+                "grasp_pose_estimate": (estimated_duration_grasp + estimated_duration_pose),
+                "offset": ((ts_move_2 - ts_move_1).to_sec() - (estimated_duration_grasp + estimated_duration_pose)),
                 "grip_time": (ts_grip - ts_move_2).to_sec()
             }
             )

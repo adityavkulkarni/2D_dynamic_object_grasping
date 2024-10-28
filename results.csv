@@ -1,2 +1,3 @@
-,Estimate_pregrasp_grasp,Time_pregrasp_grasp,Difference_pregrasp_grasp,Time_grip,Estimate_grasp_postgrasp,Time_grasp_postgrasp,Difference_grasp_postgrasp,Grasp,Solution_time_sim,Solution_time_real
-0,1.5382470179999999,1.576,0.03775298200000021,1.255,1.536261627,1.5779999999999998,0.04173837299999983,SUCCESS,0.034,0.054364681243896484
+,iteration,grasp_status,total_time,solution_time_sim,solution_time_real,grasp_pose_time,grasp_pose_estimate,offset,grip_time
+0,1,FAIL,6.797,0.02,0.02,3.747,7.1049486139999996,-3.3579486139999997,1.2770000000000001
+1,2,FAIL,4.072,0.068,0.068,3.823,6.17814327,-2.3551432699999997,0.04
