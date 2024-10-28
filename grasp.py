@@ -404,11 +404,9 @@ if __name__ == "__main__":
         time.sleep(5)
         reset_objects()
         group.set_joint_value_target(joint_goal_init)
-        plan = group.plan()
-        trajectory = plan[1].joint_trajectory
-        group.execute(plan[1].joint_trajectory)
+        plan_init = group.plan()
+        group.execute(plan_init[1].joint_trajectory)
         group.stop()
-
         gripper_group.set_joint_value_target(pos_open)
         gripper_open_plan = gripper_group.plan()
         gripper_group.execute(gripper_open_plan[1].joint_trajectory)
