@@ -38,7 +38,7 @@ def get_gazebo_timestamp():
     return clock_msg.clock
 
 
-def random_float(start=0.4, end=-0.4, multiple=0.01):
+def random_float(start=-0.4, end=-0.4, multiple=0.01):
     # Calculate the number of multiples
     range_start = int(start / multiple)
     range_end = int(end / multiple)
@@ -330,7 +330,7 @@ if __name__ == "__main__":
     results = []
     rospy.sleep(3.0)
     for i in range(30):
-        set_cube_random()
+        set_cube_random(box_pose)
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
 
