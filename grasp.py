@@ -28,8 +28,6 @@ roslib.load_manifest('gazebo_msgs')
 from gazebo_msgs.srv import GetModelState
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from gripper import Gripper
-
 
 
 def get_gazebo_timestamp():
@@ -220,11 +218,7 @@ if __name__ == "__main__":
     # publish the cube tf for visualization
     x = threading.Thread(target=publish_tf, args=(trans, qt, model_name))
     x.start()
-    
-    # gripper controller
-    # gripper = Gripper()
-    # gripper.open()
-    
+
     # # Setup clients
     torso_action = FollowTrajectoryClient("torso_controller", ["torso_lift_joint"])
 
@@ -242,11 +236,11 @@ if __name__ == "__main__":
     gripper_group.set_max_velocity_scaling_factor(1)
     gripper_group.set_max_acceleration_scaling_factor(1)
 
-    pos_close = [0, 0]
+    pos_close = [0.025, 0.025]
     gripper_group.set_joint_value_target(pos_close)
     gripper_close_plan = gripper_group.plan()
 
-    pos_open = [0.5, 0.5]
+    pos_open = [0.05, 0.05]
     gripper_group.set_joint_value_target(pos_open)
     gripper_open_plan = gripper_group.plan()
 
@@ -257,28 +251,6 @@ if __name__ == "__main__":
     scene = moveit_commander.PlanningSceneInterface()
     scene.clear()
     robot = moveit_commander.RobotCommander()
-    
-    # print information about the planner
-    planning_frame = group.get_planning_frame()
-    rospy.loginfo(f"Reference frame: {planning_frame}")
-
-    # We can also print the name of the end-effector link for this group:
-    eef_link = group.get_end_effector_link()
-    rospy.loginfo(f"End effector: {eef_link}")
-
-    # We can get a list of all the groups in the robot:
-    group_names = robot.get_group_names()
-    rospy.loginfo(f"Robot Groups: {robot.get_group_names()}")
-
-    # Sometimes for debugging it is useful to print the entire state of the
-    # robot:
-    rospy.loginfo("Printing robot state")
-    joint_state = robot.get_current_state().joint_state
-
-    results = []
-
-    for i in range(len(joint_state.name)):
-        print(joint_state.name[i], joint_state.position[i])
     
     # add objects into the planning scene
     rospy.sleep(1.0)
@@ -342,8 +314,9 @@ if __name__ == "__main__":
     group.stop()
     # ts2 = get_gazebo_timestamp()
     
+    results = []
     rospy.sleep(3.0)
-    for i in range(1):
+    for i in range(5):
         # move down to contact the cube
         seed_state = sol1
         trans_1 = [trans[0], trans[1], trans[2] + 0.2]
@@ -362,6 +335,8 @@ if __name__ == "__main__":
         group.stop()
         
         ts4 = get_gazebo_timestamp()
+        gripper_group.set_joint_value_target(pos_close)
+        gripper_open_plan = gripper_group.plan()
         gripper_group.execute(gripper_close_plan[1].joint_trajectory)
         gripper_group.stop()
         # gripper.close()
@@ -400,20 +375,23 @@ if __name__ == "__main__":
             ))
         time.sleep(5)
         reset_objects()
+        gripper_group.set_joint_value_target(pos_open)
+        gripper_open_plan = gripper_group.plan()
+
         gripper_group.execute(gripper_open_plan[1].joint_trajectory)
         gripper_group.stop()
         time.sleep(2)
     
     for result in results:
         rospy.loginfo(f"RESULTS: ")
-        print(f"Estimated time time for grasp {result[3]} s")
-        print(f"Time to move to grasp the cube: {result[4]} s")
-        print(f"Difference: {result[5]}")
-        print(f"Time to grip the cube: {result[6]} s")
-        print(f"Estimated time to lift cube: {result[7]} s")
-        print(f"Time to lift cube: {result[8]} s")
-        print(f"Difference: {result[9]}")
-        print(f"Grasp status: {result[10]}")
+        print(f"Estimated time time for grasp {result[0]} s")
+        print(f"Time to move to grasp the cube: {result[1]} s")
+        print(f"Difference: {result[2]}")
+        print(f"Time to grip the cube: {result[3]} s")
+        print(f"Estimated time to lift cube: {result[4]} s")
+        print(f"Time to lift cube: {result[5]} s")
+        print(f"Difference: {result[6]}")
+        print(f"Grasp status: {result[7]}")
     columns=[
         "Estimate_pregrasp_grasp", 
         "Time_pregrasp_grasp", 
