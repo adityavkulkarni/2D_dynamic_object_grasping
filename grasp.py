@@ -14,8 +14,8 @@ import numpy as np
 import moveit_commander
 import actionlib
 import threading
-import logging
 import pandas as pd
+import random
 
 from transforms3d.quaternions import mat2quat, quat2mat
 from geometry_msgs.msg import PoseStamped
@@ -36,6 +36,14 @@ def get_gazebo_timestamp():
     clock_msg = rospy.wait_for_message('/clock', Clock)
     
     return clock_msg.clock
+
+
+def random_float(start=0.4, end=-0.4, multiple=0.01):
+    # Calculate the number of multiples
+    range_start = int(start / multiple)
+    range_end = int(end / multiple)
+    # Generate a list of possible multiples and select one randomly
+    return random.choice([i * multiple for i in range(range_start, range_end + 1)])
 
 
 def ros_quat(tf_quat): #wxyz -> xyzw
@@ -158,6 +166,11 @@ class FollowTrajectoryClient(object):
 
         self.client.send_goal(follow_goal)
         self.client.wait_for_result()    
+
+
+def set_cube_random(box_pose):
+    box_pose.position.y = random_float()
+    set_model_pose("demo_cube", box_pose)
 
 
 def set_model_pose(model_name, pose):
@@ -317,6 +330,11 @@ if __name__ == "__main__":
     results = []
     rospy.sleep(3.0)
     for i in range(30):
+        set_cube_random()
+        T, fetch_pose, box_pose = get_pose_gazebo(model_name)
+        trans = T[:3, 3]
+
+        print(f"T=\n{T}")
         # move down to contact the cube
         seed_state = sol1
         trans_1 = [trans[0], trans[1], trans[2] + 0.2]
