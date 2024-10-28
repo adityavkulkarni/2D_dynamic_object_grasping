@@ -193,7 +193,7 @@ def reset_objects():
     scene.clear()
     set_model_pose("demo_cube", box_pose)
     set_model_pose("fetch", fetch_pose)
-    group.go(joints, wait=True)
+    # group.go(joints, wait=True)
     # gripper.open()
     group.stop()
 
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     gripper_group.set_max_velocity_scaling_factor(1)
     gripper_group.set_max_acceleration_scaling_factor(1)
 
-    pos_close = [0.025, 0.025]
+    pos_close = [0.02, 0.02]
     gripper_group.set_joint_value_target(pos_close)
     gripper_close_plan = gripper_group.plan()
 
@@ -301,10 +301,10 @@ if __name__ == "__main__":
     trans_1 = [trans[0], trans[1], trans[2] + 0.5]
     sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
     # move to the joint goal
-    joint_goal = sol1[1:]
+    joint_goal_init = sol1[1:]
 
     # Retrieve estimated duration from the planned trajectory
-    group.set_joint_value_target(joint_goal)
+    group.set_joint_value_target(joint_goal_init)
     plan = group.plan()
     trajectory = plan[1].joint_trajectory
     # estimated_duration_pose = trajectory.points[-1].time_from_start.to_sec()
@@ -316,7 +316,7 @@ if __name__ == "__main__":
     
     results = []
     rospy.sleep(3.0)
-    for i in range(5):
+    for i in range(30):
         # move down to contact the cube
         seed_state = sol1
         trans_1 = [trans[0], trans[1], trans[2] + 0.2]
@@ -375,9 +375,14 @@ if __name__ == "__main__":
             ))
         time.sleep(5)
         reset_objects()
+        group.set_joint_value_target(joint_goal_init)
+        plan = group.plan()
+        trajectory = plan[1].joint_trajectory
+        group.execute(plan[1].joint_trajectory)
+        group.stop()
+
         gripper_group.set_joint_value_target(pos_open)
         gripper_open_plan = gripper_group.plan()
-
         gripper_group.execute(gripper_open_plan[1].joint_trajectory)
         gripper_group.stop()
         time.sleep(2)
