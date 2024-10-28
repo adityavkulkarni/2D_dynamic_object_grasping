@@ -143,16 +143,20 @@ if __name__ == "__main__":
     # query the demo cube pose
     model_name = 'demo_cube'
     T, fetch_pose, box_pose = get_pose_gazebo(model_name)
+    box_pose.position.x=0.6
     box_pose.position.y=0.4
+    box_pose.position.z=0.724341
     set_model_pose(model_name=model_name, pose=box_pose)
 
+    iter = 10
     incr = -0.001
-    while True:
-        if box_pose.position.y <= -0.4:
+    while iter:
+        if box_pose.position.y <= -0.4 or box_pose.position.y > 0.4:
+            iter -= 1
             incr = 0.001
         box_pose.position.y += incr
         set_model_pose(model_name=model_name, pose=box_pose)
-        time.sleep(0.1)
+        time.sleep(0.00001)
     
     rospy.signal_shutdown("")
 
