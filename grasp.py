@@ -321,8 +321,10 @@ if __name__ == "__main__":
         seed_state = sol1
         trans_1 = [trans[0], trans[1], trans[2] + 0.2]
         ts_sol1 = get_gazebo_timestamp()
+        ts_sol_r1 = time.time()
         sol2 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
         ts_sol2 = get_gazebo_timestamp()
+        ts_sol_r2 = time.time()
         # move to the joint goal
         joint_goal = sol2[1:]
         # Retrieve estimated duration from the planned trajectory
@@ -373,7 +375,8 @@ if __name__ == "__main__":
                 (ts2_rev - ts1_rev).to_sec(), 
                 ((ts2_rev - ts1_rev).to_sec())- estimated_duration_pose_rev,
                 grasp_status,
-                (ts_sol2-ts_sol1).to_sec()
+                (ts_sol2-ts_sol1).to_sec(),
+                (ts_sol_r2 -ts_sol_r1)
             ))
         time.sleep(5)
         reset_objects()
@@ -391,7 +394,8 @@ if __name__ == "__main__":
     
     for result in results:
         rospy.loginfo(f"RESULTS: ")
-        print(f"Time for calculating solution: {result[8]}")
+        print(f"Time for calculating solution(sim): {result[8]}")
+        print(f"Time for calculating solution(real): {result[9]}")
         print(f"Estimated time time for grasp {result[0]} s")
         print(f"Time to move to grasp the cube: {result[1]} s")
         print(f"Difference: {result[2]}")
@@ -408,8 +412,9 @@ if __name__ == "__main__":
         "Estimate_grasp_postgrasp", 
         "Time_grasp_postgrasp", 
         "Difference_grasp_postgrasp",
-        "Grasp"
-        "Solution_time"
+        "Grasp",
+        "Solution_time_sim",
+        "Solution_time_real"
     ]
     pd.DataFrame(results, columns=columns).to_csv("results.csv")
     rospy.signal_shutdown("")

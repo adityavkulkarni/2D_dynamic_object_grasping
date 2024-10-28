@@ -1,2 +1,2 @@
-,Estimate_pregrasp_grasp,Time_pregrasp_grasp,Difference_pregrasp_grasp,Time_grip,Estimate_grasp_postgrasp,Time_grasp_postgrasp,Difference_grasp_postgrasp,Grasp
-0,1.582006345,1.615,0.032993655000000066,1.173,1.581520794,1.6139999999999999,0.03247920599999987,SUCCESS
+,Estimate_pregrasp_grasp,Time_pregrasp_grasp,Difference_pregrasp_grasp,Time_grip,Estimate_grasp_postgrasp,Time_grasp_postgrasp,Difference_grasp_postgrasp,Grasp,Solution_time_sim,Solution_time_real
+0,1.566153215,1.597,0.030846785000000043,1.29,1.5631846839999999,1.6019999999999999,0.03881531599999999,SUCCESS,0.033,0.040283203125
