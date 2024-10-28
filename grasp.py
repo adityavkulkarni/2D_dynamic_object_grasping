@@ -421,7 +421,10 @@ if __name__ == "__main__":
                 ((ts2_rev - ts1_rev).to_sec())- estimated_duration_pose_rev,
                 grasp_status,
                 (ts_sol2-ts_sol1).to_sec(),
-                (ts_sol_r2 -ts_sol_r1)
+                (ts_sol_r2 -ts_sol_r1),
+                estimated_duration_pose,
+                (ts2 - ts1).to_sec(), 
+                ((ts2 - ts1).to_sec()) - estimated_duration_grasp
             ))
         time.sleep(5)
         reset_objects()
@@ -441,6 +444,9 @@ if __name__ == "__main__":
         rospy.loginfo(f"RESULTS: ")
         print(f"Time for calculating solution(sim): {result[8]}")
         print(f"Time for calculating solution(real): {result[9]}")
+        print(f"Estimated time time for pregrasp {result[0]} s")
+        print(f"Time to move to pregrasp: {result[1]} s")
+        print(f"Difference: {result[2]}")
         print(f"Estimated time time for grasp {result[0]} s")
         print(f"Time to move to grasp the cube: {result[1]} s")
         print(f"Difference: {result[2]}")
@@ -459,7 +465,10 @@ if __name__ == "__main__":
         "Difference_grasp_postgrasp",
         "Grasp",
         "Solution_time_sim",
-        "Solution_time_real"
+        "Solution_time_real",
+        "Estimate_init_pregrasp", 
+        "Time_init_pregrasp", 
+        "Difference_init_pregrasp"
     ]
     pd.DataFrame(results, columns=columns).to_csv("results.csv")
     rospy.signal_shutdown("")
