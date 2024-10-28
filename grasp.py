@@ -333,9 +333,26 @@ if __name__ == "__main__":
         set_cube_random(box_pose)
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
-
         print(f"T=\n{T}")
+
+        # Move directly above the cube
+        trans_1 = [trans[0], trans[1], trans[2] + 0.5]
+        sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
+        # move to the joint goal
+        joint_goal_init = sol1[1:]
+
+        # Retrieve estimated duration from the planned trajectory
+        group.set_joint_value_target(joint_goal_init)
+        plan = group.plan()
+        trajectory = plan[1].joint_trajectory
+        estimated_duration_pose = trajectory.points[-1].time_from_start.to_sec()
+
+        ts1 = get_gazebo_timestamp()
+        group.execute(plan[1].joint_trajectory)
+        group.stop()
+        ts2 = get_gazebo_timestamp()
         # move down to contact the cube
+
         seed_state = sol1
         trans_1 = [trans[0], trans[1], trans[2] + 0.2]
         ts_sol1 = get_gazebo_timestamp()
@@ -343,6 +360,7 @@ if __name__ == "__main__":
         sol2 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
         ts_sol2 = get_gazebo_timestamp()
         ts_sol_r2 = time.time()
+        
         # move to the joint goal
         joint_goal = sol2[1:]
         # Retrieve estimated duration from the planned trajectory
