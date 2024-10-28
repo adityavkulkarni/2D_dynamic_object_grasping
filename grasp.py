@@ -322,11 +322,11 @@ if __name__ == "__main__":
     
     results = []
     rospy.sleep(3.0)
-    for i in range(2):
+    for i in range(30):
         set_cube_random(box_pose)
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
-        print(f"Iteration {i+1}: Cube postion = {trans}")
+        rospy.loginfo(f"Iteration {i+1}: Cube postion = {trans}")
 
         ts_final = get_gazebo_timestamp()
         ts_sol1 = get_gazebo_timestamp()
@@ -403,14 +403,14 @@ if __name__ == "__main__":
             )
         time.sleep(5)
         reset_objects()
-        group.set_joint_value_target(joint_goal_init)
-        plan_init = group.plan()
-        group.execute(plan_init[1].joint_trajectory)
-        group.stop()
         gripper_group.set_joint_value_target(pos_open)
         gripper_open_plan = gripper_group.plan()
         gripper_group.execute(gripper_open_plan[1].joint_trajectory)
         gripper_group.stop()
+        group.set_joint_value_target(joint_goal_init)
+        plan_init = group.plan()
+        group.execute(plan_init[1].joint_trajectory)
+        group.stop()
         time.sleep(2)
     
     for result in results:
