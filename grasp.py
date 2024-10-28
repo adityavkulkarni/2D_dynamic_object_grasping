@@ -394,7 +394,7 @@ if __name__ == "__main__":
                 "grasp_status": grasp_status,
                 "total_time": (ts_final2 - ts_final).to_sec(),
                 "solution_time_sim": (ts_sol2 - ts_sol1).to_sec(),
-                "solution_time_real": (ts_sol2 - ts_sol1).to_sec(),
+                "solution_time_real": (ts_sol_r2 - ts_sol_r1).to_sec(),
                 "grasp_pose_time": (ts_move_2 - ts_move_1).to_sec(),
                 "grasp_pose_estimate": (estimated_duration_grasp + estimated_duration_pose),
                 "offset": ((ts_move_2 - ts_move_1).to_sec() - (estimated_duration_grasp + estimated_duration_pose)),
