@@ -322,7 +322,7 @@ if __name__ == "__main__":
     
     results = []
     rospy.sleep(3.0)
-    for i in range(30):
+    for i in range(50):
         set_cube_random(box_pose)
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
