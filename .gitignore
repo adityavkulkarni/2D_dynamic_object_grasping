@@ -3,6 +3,7 @@
 
 # Don't ignore Python files
 !grasp.py
+!move_cube_linear.py
 !gripper.py
 !results.csv
 !results.ipynb
