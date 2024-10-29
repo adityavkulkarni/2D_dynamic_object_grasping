@@ -68,6 +68,30 @@ def rotY(roty):
     return RotY
 
 
+def rotX(rotx):
+    RotX = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, np.cos(rotx), -np.sin(rotx), 0],
+            [0, np.sin(rotx), np.cos(rotx), 0],
+            [0, 0, 0, 1],
+        ]
+    )
+    return RotX
+
+
+def rotZ(rotz):
+    RotZ = np.array(
+        [
+            [np.cos(rotz), -np.sin(rotz), 0, 0],
+            [np.sin(rotz), np.cos(rotz), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+    return RotZ
+
+
 # Convert quaternion and translation to a 4x4 tranformation matrix
 # See Appendix B.3 in Lynch and Park, Modern Robotics for the definition of quaternion
 def ros_qt_to_rt(rot, trans):
@@ -173,12 +197,13 @@ class FollowTrajectoryClient(object):
 position_list = []
 # pos = 0.41
 # incr = -0.01
-def set_cube_random(box_pose):
+def set_cube_pose(box_pose, y=None):
     global position_list
-    y = random_float()
-    while y in position_list and len(position_list) < 80:
+    if y is None:
         y = random_float()
-    position_list.append(y)
+        while y in position_list and len(position_list) < 80:
+            y = random_float()
+        position_list.append(y)
     # global pos, incr
     # x = pos + incr
     # pos = y
@@ -324,10 +349,12 @@ if __name__ == "__main__":
     angle = np.pi / -2
 
     # Create the rotation matrix for 90 degrees about the y-axis
-    rotation_matrix = rotY(angle)
+    rotation_matrix_Y = rotY(angle)
+    rotation_matrix_Z = rotZ(angle)
 
     # Apply the rotation to the transformation matrix T
-    T_rotated = np.dot(rotation_matrix, T)
+    T_rotated = np.dot(rotation_matrix_Y, T)
+    T_rotated = np.dot(rotation_matrix_Z, T_rotated)
 
     # Extract the rotated quaternion
     rotated_qt = mat2quat(T_rotated[:3, :3])
@@ -347,7 +374,7 @@ if __name__ == "__main__":
     from move_cube_linear import CubeMover
     mover = CubeMover()
     for i in range(args.iters):
-        # set_cube_random(box_pose)
+        set_cube_pose(box_pose, y=0.4)
 
         # import multiprocessing
         # thread = multiprocessing.Process(target=start_move)
@@ -395,8 +422,8 @@ if __name__ == "__main__":
         rospy.loginfo(f"Cube pose before grasp: {T1[:3, 3]}")
         mover.stop()
         T1, fetch_pose1, box_pose1 = get_pose_gazebo(model_name)
-        trans = T1[:3, 3]
-        rospy.loginfo(f"Cube pose after grasp: {T1[:3, 3]}")
+        trans_grasp = T1[:3, 3]
+        rospy.loginfo(f"Cube pose after grasp: {trans_grasp}")
         ts_move_2 = get_gazebo_timestamp()
 
         gripper_group.set_joint_value_target(pos_close)
@@ -409,7 +436,6 @@ if __name__ == "__main__":
         # Pick the cube
         seed_state = sol2
         trans_3 = [trans[0], trans[1], trans[2] + 0.5]
-        print(trans_3)
         sol3 = get_track_ik_solution(seed_state, trans_3, rotated_qt)
         joint_goal = sol3[1:]
         group.set_joint_value_target(joint_goal)
@@ -438,7 +464,8 @@ if __name__ == "__main__":
                 "grasp_pose_time": (ts_move_2 - ts_move_1).to_sec(),
                 "grasp_pose_estimate": (estimated_duration_grasp + estimated_duration_pose),
                 "offset": ((ts_move_2 - ts_move_1).to_sec() - (estimated_duration_grasp + estimated_duration_pose)),
-                "grip_time": (ts_grip - ts_move_2).to_sec()
+                "grip_time": (ts_grip - ts_move_2).to_sec(),
+                "trans_grasp":trans_grasp
             }
             )
         rospy.sleep(5)
@@ -465,6 +492,7 @@ if __name__ == "__main__":
         print(f'Pregrasp Movement Estimate: {result["grasp_pose_estimate"]}')
         print(f'Pregrasp Movement Offset: {result["offset"]}')
         print(f'Gripping Time: {result["grip_time"]}')
+        print(f'Position at the time of grasp: {result["trans_grasp"]}')
     if args.results:
         pd.DataFrame(results).to_csv("results.csv")
     rospy.signal_shutdown("")
