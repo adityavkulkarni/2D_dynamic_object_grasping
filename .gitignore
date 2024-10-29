@@ -7,4 +7,4 @@
 !gripper.py
 !results.csv
 !results.ipynb
-!viz_results/
+!viz_results/*.png
