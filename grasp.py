@@ -16,6 +16,8 @@ import actionlib
 import threading
 import pandas as pd
 import random
+import argparse
+
 
 from transforms3d.quaternions import mat2quat, quat2mat
 from geometry_msgs.msg import PoseStamped
@@ -221,6 +223,11 @@ if __name__ == "__main__":
     """
     Main function to run the code
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--iters', help='iterations', type=int, default=1)
+    parser.add_argument('--results', help='store results', type=bool, default=True)
+    args = parser.parse_args()
+
     # intialize ros node
     rospy.init_node('planning_scene_block')
     rospy.set_param('/use_sim_time', True)
@@ -328,7 +335,7 @@ if __name__ == "__main__":
     
     results = []
     rospy.sleep(3.0)
-    for i in range(50):
+    for i in range(args.iters):
         set_cube_random(box_pose)
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
@@ -432,6 +439,7 @@ if __name__ == "__main__":
         print(f'Pregrasp Movement Estimate: {result["grasp_pose_estimate"]}')
         print(f'Pregrasp Movement Offset: {result["offset"]}')
         print(f'Gripping Time: {result["grip_time"]}')
-    pd.DataFrame(results).to_csv("results.csv")
+    if args.results:
+        pd.DataFrame(results).to_csv("results.csv")
     rospy.signal_shutdown("")
 
