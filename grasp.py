@@ -171,12 +171,17 @@ class FollowTrajectoryClient(object):
 
 
 position_list = []
+# pos = 0.41
+# incr = -0.01
 def set_cube_random(box_pose):
     global position_list
     x = random_float()
-    while x in position_list:
+    while x in position_list and len(position_list) < 80:
         x = random_float()
     position_list.append(x)
+    # global pos, incr
+    # x = pos + incr
+    pos = x
     box_pose.position.y = x
     set_model_pose("demo_cube", box_pose)
 
@@ -212,6 +217,7 @@ def get_track_ik_solution(seed_state, trans, rotated_qt):
 
 def reset_objects():
     scene.clear()
+    box_pose.position.y = 0
     set_model_pose("demo_cube", box_pose)
     set_model_pose("fetch", fetch_pose)
     # group.go(joints, wait=True)
@@ -400,7 +406,10 @@ if __name__ == "__main__":
 
         cur_T, cur_fetch_pose, cur_box_pose = get_pose_gazebo(model_name)
         grasp_status = 'SUCCESS' if round(cur_T[2][3] - T[2][3], 1) == 0.3 else 'FAIL'
-        rospy.loginfo(f"Iteration: {i+1} Grasp status: {grasp_status}")
+        if grasp_status == 'SUCCESS':
+            rospy.loginfo(f"Iteration: {i+1} Grasp status: {grasp_status}")
+        else:
+            rospy.logerr(f"Iteration: {i+1} Grasp status: {grasp_status}")
         results.append(
             {
                 "iteration": i+1, 
