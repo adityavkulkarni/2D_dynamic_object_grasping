@@ -175,14 +175,15 @@ position_list = []
 # incr = -0.01
 def set_cube_random(box_pose):
     global position_list
-    x = random_float()
-    while x in position_list and len(position_list) < 80:
-        x = random_float()
-    position_list.append(x)
+    # y = random_float()
+    y = 0.08
+    while y in position_list and len(position_list) < 80:
+        y = random_float()
+    position_list.append(y)
     # global pos, incr
     # x = pos + incr
-    pos = x
-    box_pose.position.y = x
+    # pos = y
+    box_pose.position.y = y
     set_model_pose("demo_cube", box_pose)
 
 
@@ -355,8 +356,8 @@ if __name__ == "__main__":
         trans_1 = [trans[0], trans[1], trans[2] + 0.5]
         sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
         seed_state = sol1
-        trans_1 = [trans[0], trans[1], trans[2] + 0.2]
-        sol2 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
+        trans_2 = [trans[0], trans[1], trans[2] + 0.2]
+        sol2 = get_track_ik_solution(seed_state, trans_2, rotated_qt)
         
         ts_sol2 = get_gazebo_timestamp()
         ts_sol_r2 = time.time()
@@ -392,8 +393,8 @@ if __name__ == "__main__":
 
         # Pick the cube
         seed_state = sol2
-        trans_1 = [trans[0], trans[1], trans[2] + 0.5]
-        sol3 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
+        trans_3 = [trans[0], trans[1], trans[2] + 0.5]
+        sol3 = get_track_ik_solution(seed_state, trans_3, rotated_qt)
         joint_goal = sol3[1:]
         group.set_joint_value_target(joint_goal)
         plan3 = group.plan()
