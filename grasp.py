@@ -242,6 +242,9 @@ if __name__ == "__main__":
     model_name = 'demo_cube'
     T, fetch_pose, box_pose = get_pose_gazebo(model_name)
     
+    box_pose.position.y = 0.4
+    set_model_pose("demo_cube", box_pose)
+    T, fetch_pose, box_pose = get_pose_gazebo(model_name)
     # translation
     trans = T[:3, 3]
     # quaternion in ros
@@ -341,10 +344,18 @@ if __name__ == "__main__":
     
     results = []
     rospy.sleep(3.0)
+    from move_cube_linear import CubeMover
+    mover = CubeMover()
     for i in range(args.iters):
-        set_cube_random(box_pose)
+        # set_cube_random(box_pose)
+
+        # import multiprocessing
+        # thread = multiprocessing.Process(target=start_move)
+        # thread.start()
+        mover.start()
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
+        trans = [trans[0], 0.181, trans[2]]
         rospy.loginfo(f"Iteration {i+1}: Cube postion = {trans}")
 
         ts_final = get_gazebo_timestamp()
@@ -380,7 +391,12 @@ if __name__ == "__main__":
         # move to grasp the cube
         group.execute(plan2[1].joint_trajectory)
         group.stop()
-        
+        T1, fetch_pose1, box_pose1 = get_pose_gazebo(model_name)
+        rospy.loginfo(f"Cube pose before grasp: {T1[:3, 3]}")
+        mover.stop()
+        T1, fetch_pose1, box_pose1 = get_pose_gazebo(model_name)
+        trans = T1[:3, 3]
+        rospy.loginfo(f"Cube pose after grasp: {T1[:3, 3]}")
         ts_move_2 = get_gazebo_timestamp()
 
         gripper_group.set_joint_value_target(pos_close)
@@ -393,6 +409,7 @@ if __name__ == "__main__":
         # Pick the cube
         seed_state = sol2
         trans_3 = [trans[0], trans[1], trans[2] + 0.5]
+        print(trans_3)
         sol3 = get_track_ik_solution(seed_state, trans_3, rotated_qt)
         joint_goal = sol3[1:]
         group.set_joint_value_target(joint_goal)
