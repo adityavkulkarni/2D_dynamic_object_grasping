@@ -175,8 +175,7 @@ position_list = []
 # incr = -0.01
 def set_cube_random(box_pose):
     global position_list
-    # y = random_float()
-    y = 0.08
+    y = random_float()
     while y in position_list and len(position_list) < 80:
         y = random_float()
     position_list.append(y)
@@ -425,7 +424,7 @@ if __name__ == "__main__":
                 "grip_time": (ts_grip - ts_move_2).to_sec()
             }
             )
-        time.sleep(5)
+        rospy.sleep(5)
         gripper_group.set_joint_value_target(pos_open)
         gripper_open_plan = gripper_group.plan()
         gripper_group.execute(gripper_open_plan[1].joint_trajectory)
