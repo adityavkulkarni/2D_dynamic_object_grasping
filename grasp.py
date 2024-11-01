@@ -242,7 +242,7 @@ def get_track_ik_solution(seed_state, trans, rotated_qt):
 
 def reset_objects():
     scene.clear()
-    box_pose.position.y = 0
+    box_pose.position.y = 0.4
     set_model_pose("demo_cube", box_pose)
     set_model_pose("fetch", fetch_pose)
     # group.go(joints, wait=True)
@@ -360,7 +360,7 @@ if __name__ == "__main__":
     rotated_qt = mat2quat(T_rotated[:3, :3])
 
     # Move directly initial pose
-    trans_1 = [trans[0], trans[1], trans[2] + 0.5]
+    trans_1 = [trans[0], 0, trans[2] + 0.5]
     sol_init = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
     seed_state = sol_init
     joint_goal_init = sol_init[1:]
@@ -373,6 +373,7 @@ if __name__ == "__main__":
     rospy.sleep(3.0)
     from move_cube_linear import CubeMover
     mover = CubeMover()
+    y_intercept = 0.198
     for i in range(args.iters):
         set_cube_pose(box_pose, y=0.4)
 
@@ -382,7 +383,7 @@ if __name__ == "__main__":
         mover.start()
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
-        trans = [trans[0], 0.181, trans[2]]
+        trans = [trans[0], y_intercept-0.001, trans[2]]
         rospy.loginfo(f"Iteration {i+1}: Cube postion = {trans}")
 
         ts_final = get_gazebo_timestamp()
@@ -423,6 +424,7 @@ if __name__ == "__main__":
         mover.stop()
         T1, fetch_pose1, box_pose1 = get_pose_gazebo(model_name)
         trans_grasp = T1[:3, 3]
+        y_intercept = trans_grasp[1]
         rospy.loginfo(f"Cube pose after grasp: {trans_grasp}")
         ts_move_2 = get_gazebo_timestamp()
 
@@ -465,7 +467,7 @@ if __name__ == "__main__":
                 "grasp_pose_estimate": (estimated_duration_grasp + estimated_duration_pose),
                 "offset": ((ts_move_2 - ts_move_1).to_sec() - (estimated_duration_grasp + estimated_duration_pose)),
                 "grip_time": (ts_grip - ts_move_2).to_sec(),
-                "trans_grasp":trans_grasp
+                "trans_grasp":trans_grasp[1]
             }
             )
         rospy.sleep(5)
