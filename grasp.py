@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-"""
-CS 6301 Homework 4 Programming
-Robot Control for Grasping
-"""
 
 import sys
 import time
