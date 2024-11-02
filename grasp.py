@@ -246,6 +246,49 @@ def reset_objects():
     group.stop()
 
 
+
+def get_solution(box_pose):
+    def get_track_ik_solution(seed_state, trans, rotated_qt):
+        retry = 30    
+        sol = None
+        while sol is None:
+            # multithread and random state
+            sol = ik_solver.get_ik(seed_state,
+                            trans[0], trans[1], trans[2],
+                            rotated_qt[0], rotated_qt[1], rotated_qt[2], rotated_qt[3])
+            """rospy.loginfo('Solution from IK:')
+            print(ik_solver.joint_names)                
+            print(sol)"""
+            if sol: break
+            retry -= 1    
+        return sol
+
+    seed_state = (0.4, -0.47298796080251726, -0.885309167697212, 0.9398159739359973, 1.477055173112182, -0.5653652160051996, 1.2667744594915047, -1.0417966450715803)
+    T, fetch_pose, box_pose = get_pose_gazebo(model_name)
+    # translation
+    trans = T[:3, 3]
+    # quaternion in ros
+    qt = ros_quat(mat2quat(T[:3, :3]))
+    angle = np.pi / -2
+
+    # Create the rotation matrix for 90 degrees about the y-axis
+    rotation_matrix_Y = rotY(angle)
+    rotation_matrix_Z = rotZ(angle)
+
+    # Apply the rotation to the transformation matrix T
+    T_rotated = np.dot(rotation_matrix_Y, T)
+    T_rotated = np.dot(rotation_matrix_Z, T_rotated)
+
+    # Extract the rotated quaternion
+    rotated_qt = mat2quat(T_rotated[:3, :3])
+
+    trans_1 = [trans[0], trans[1], trans[2] + 0.5]
+    sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
+    seed_state = sol1
+    trans_2 = [trans[0], trans[1], trans[2] + 0.2]
+    sol2 = get_track_ik_solution(seed_state, trans_2, rotated_qt)
+    return (sol1, sol2)
+
 if __name__ == "__main__":
     """
     Main function to run the code

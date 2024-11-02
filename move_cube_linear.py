@@ -120,7 +120,7 @@ if __name__ == "__main__":
     Main function to run the code
     """
     # start_move()
-    mover = CubeMover(velocity=0.01)
+    mover = CubeMover(velocity=0.1)
     mover.reset()
     mover.start(motion="circiular")
     time.sleep(10)
