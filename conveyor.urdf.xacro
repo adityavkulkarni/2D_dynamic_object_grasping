@@ -1,0 +1,219 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="conveyor">
+    <!-- Add a world link -->
+    <link name="world"/>
+
+    <!-- Define materials -->
+    <material name="Gray">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+    </material>
+    
+    <material name="Red">
+        <color rgba="1.0 0.0 0.0 1.0"/>
+    </material>
+
+    <material name="Black">
+        <color rgba="0.2 0.2 0.2 1.0"/>
+    </material>
+
+    <!-- Define table top -->
+    <link name="table_top">
+        <visual>
+            <geometry>
+                <box size="2 0.5 0.02"/>  <!-- Made slightly thinner for table top -->
+            </geometry>
+            <material name="Gray"/>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="2 0.5 0.02"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="50.0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="4.0" ixy="0.0" ixz="0.0" 
+                     iyy="4.0" iyz="0.0" 
+                     izz="4.0"/>
+        </inertial>
+    </link>
+
+    <!-- Define table legs -->
+    <!-- Front Left Leg -->
+    <link name="front_left_leg">
+        <visual>
+            <geometry>
+                <cylinder radius="0.02" length="0.7"/>
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder radius="0.02" length="0.7"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Front Right Leg -->
+    <link name="front_right_leg">
+        <visual>
+            <geometry>
+                <cylinder radius="0.02" length="0.7"/>
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder radius="0.02" length="0.7"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Back Left Leg -->
+    <link name="back_left_leg">
+        <visual>
+            <geometry>
+                <cylinder radius="0.02" length="0.7"/>
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder radius="0.02" length="0.7"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Back Right Leg -->
+    <link name="back_right_leg">
+        <visual>
+            <geometry>
+                <cylinder radius="0.02" length="0.7"/>
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder radius="0.02" length="0.7"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Connect world to table_top -->
+    <joint name="world_to_table" type="fixed">
+        <parent link="world"/>
+        <child link="table_top"/>
+        <origin xyz="0 0 0.7" rpy="0 0 0"/>  <!-- Raised to accommodate legs -->
+    </joint>
+
+    <!-- Connect legs to table top -->
+    <joint name="table_to_front_left_leg" type="fixed">
+        <parent link="table_top"/>
+        <child link="front_left_leg"/>
+        <origin xyz="0.9 0.2 -0.35" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="table_to_front_right_leg" type="fixed">
+        <parent link="table_top"/>
+        <child link="front_right_leg"/>
+        <origin xyz="0.9 -0.2 -0.35" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="table_to_back_left_leg" type="fixed">
+        <parent link="table_top"/>
+        <child link="back_left_leg"/>
+        <origin xyz="-0.9 0.2 -0.35" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="table_to_back_right_leg" type="fixed">
+        <parent link="table_top"/>
+        <child link="back_right_leg"/>
+        <origin xyz="-0.9 -0.2 -0.35" rpy="0 0 0"/>
+    </joint>
+
+    <!-- Define the moving cube -->
+    <link name="moving_cube">
+        <visual>
+            <geometry>
+                <box size="0.1 0.1 0.1"/>
+            </geometry>
+            <material name="Red"/>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.1 0.1 0.1"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.5"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="0.001" ixy="0.0" ixz="0.0" 
+                     iyy="0.001" iyz="0.0" 
+                     izz="0.001"/>
+        </inertial>
+    </link>
+    
+    <!-- Add a joint to control the cube's movement -->
+    <joint name="cube_belt_joint" type="prismatic">
+        <parent link="table_top"/>
+        <child link="moving_cube"/>
+        <origin xyz="0 0 0.06" rpy="0 0 0"/>  <!-- Adjusted to sit on table top -->
+        <axis xyz="1 0 0"/>
+        <limit lower="-1.0" upper="1.0" effort="100" velocity="0.5"/>
+        <dynamics damping="50.0" friction="1.0"/>
+    </joint>
+
+    <!-- Transmission for the joint -->
+    <transmission name="cube_belt_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="cube_belt_joint">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="cube_belt_motor">
+            <mechanicalReduction>1</mechanicalReduction>
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </actuator>
+    </transmission>
+
+    <!-- Gazebo-specific elements -->
+    <gazebo reference="table_top">
+        <material>Gazebo/Gray</material>
+        <static>true</static>
+        <mu1>0.5</mu1>
+        <mu2>0.5</mu2>
+    </gazebo>
+
+    <gazebo reference="front_left_leg">
+        <material>Gazebo/Black</material>
+        <static>true</static>
+    </gazebo>
+
+    <gazebo reference="front_right_leg">
+        <material>Gazebo/Black</material>
+        <static>true</static>
+    </gazebo>
+
+    <gazebo reference="back_left_leg">
+        <material>Gazebo/Black</material>
+        <static>true</static>
+    </gazebo>
+
+    <gazebo reference="back_right_leg">
+        <material>Gazebo/Black</material>
+        <static>true</static>
+    </gazebo>
+
+    <gazebo reference="moving_cube">
+        <material>Gazebo/Red</material>
+        <mu1>0.5</mu1>
+        <mu2>0.5</mu2>
+    </gazebo>
+
+    <!-- Gazebo ROS control plugin -->
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <robotNamespace>/conveyor</robotNamespace>
+            <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+        </plugin>
+    </gazebo>
+</robot>

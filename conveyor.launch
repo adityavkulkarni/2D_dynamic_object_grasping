@@ -1,0 +1,34 @@
+<launch>
+    <!-- Launch Gazebo -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="true"/>
+    </include>
+
+    <!-- Load the URDF -->
+    <param name="robot_description" 
+           command="$(find xacro)/xacro '$(find conveyor_sim)/urdf/conveyor.urdf.xacro'" />
+    
+    <!-- Load controller configurations -->
+    <rosparam file="$(find conveyor_sim)/config/conveyor_controllers.yaml" command="load"/>
+
+    <!-- Start the controllers -->
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+          output="screen" ns="/conveyor"
+          args="joint_state_controller
+                moving_cube_position_controller"/>
+
+    <!-- Convert joint states to TF transforms -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
+          respawn="false" output="screen">
+        <remap from="/joint_states" to="/conveyor/joint_states"/>
+    </node>
+
+    <!-- Spawn the conveyor system in Gazebo -->
+    <node name="spawn_urdf" 
+          pkg="gazebo_ros" 
+          type="spawn_model" 
+          args="-urdf -param robot_description -model conveyor" 
+          output="screen" />
+</launch>
