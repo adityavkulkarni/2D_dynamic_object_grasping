@@ -18,7 +18,9 @@ class CubeMover:
     def __init__(self, model_name='demo_cube', motion_type='linear', velocity=0.1):
         self.model_name = model_name
         self.box_pose = None
-        self.incr = -velocity * 0.01
+        self.sleep = 0.01
+        self.velocity = velocity
+        self.incr = -velocity * self.sleep
         self.iter = 10
         self.running = False
 
@@ -26,6 +28,14 @@ class CubeMover:
         # This function should query the current pose of the cube
         T, fetch_pose, box_pose = get_pose_gazebo(self.model_name)
         return box_pose
+
+    def reset(self):
+        pose = self.get_pose()
+        pose.position.x = 0.6
+        pose.position.y = 0
+        pose.position.z = 0.724329
+        self.box_pose = pose
+        self.set_pose()
 
     def set_pose(self):
         try:
@@ -39,7 +49,7 @@ class CubeMover:
         except rospy.ServiceException as e:
             rospy.logerr("Service call failed: %s" % e)
 
-    def start(self):
+    def start(self, motion="linear"):
         self.running = True
         self.box_pose = self.get_pose()
         rospy.loginfo("Cube movement starting")
@@ -54,31 +64,28 @@ class CubeMover:
                 ret = self.set_pose()
                 if ret == -1:
                     break
-                time.sleep(0.01)
+                time.sleep(self.sleep)
 
         def move_circular():
-            angle = 0  # Initial angle in radians
-            radius = 0.4  # Radius of the circular path
-            angular_speed = self.incr  # Speed at which the angle increases
-
+            angle = t = 0 
+            radius = 0.2  
+            angular_speed = self.velocity / radius
+            cur_pose = self.get_pose()
+            center = (cur_pose.position.x + radius, cur_pose.position.y)
             while self.running:
-                # Update the x and y positions based on the current angle
-                self.box_pose.position.x = radius * math.cos(angle)
-                self.box_pose.position.y = radius * math.sin(angle)
+                angle = angular_speed * t
+                self.box_pose.position.x = center[0] + (radius * math.cos(angle))
+                self.box_pose.position.y = center[1] + (radius * math.sin(angle))
 
-                # Set the new pose
                 ret = self.set_pose()
                 if ret == -1:
                     break
-
-                # Increment the angle for the next iteration
-                angle += angular_speed
-
-                # Sleep for a short duration to control the speed of movement
-                time.sleep(0.01)
+                t += self.sleep
+                time.sleep(self.sleep)
 
         # Start the movement in a new thread
-        thread = threading.Thread(target=move_linear)
+        move = move_linear if motion == "linear" else move_circular
+        thread = threading.Thread(target=move)
         thread.start()
         self.thread = thread
 
@@ -113,8 +120,9 @@ if __name__ == "__main__":
     Main function to run the code
     """
     # start_move()
-    mover = CubeMover()
-    mover.start()
+    mover = CubeMover(velocity=0.01)
+    mover.reset()
+    mover.start(motion="circiular")
     time.sleep(10)
     print(10)
     mover.stop()  # Call this to stop the movement

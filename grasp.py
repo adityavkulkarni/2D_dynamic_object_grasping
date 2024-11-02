@@ -359,6 +359,10 @@ if __name__ == "__main__":
     trans_1 = [trans[0], 0, trans[2] + 0.5]
     sol_init = get_track_ik_solution(seed_state, trans_1, rotated_qt)   
     seed_state = sol_init
+    """
+    (0.4, -0.47298796080251726, -0.885309167697212, 0.9398159739359973, 1.477055173112182, -0.5653652160051996, 1.2667744594915047, -1.0417966450715803)
+    """
+    print(sol_init)
     joint_goal_init = sol_init[1:]
     group.set_joint_value_target(joint_goal_init)
     plan_init = group.plan()
