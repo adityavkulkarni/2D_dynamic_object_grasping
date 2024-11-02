@@ -247,7 +247,7 @@ def reset_objects():
 
 
 
-def get_solution(box_pose):
+def get_solution(T):
     def get_track_ik_solution(seed_state, trans, rotated_qt):
         retry = 30    
         sol = None
@@ -264,7 +264,7 @@ def get_solution(box_pose):
         return sol
 
     seed_state = (0.4, -0.47298796080251726, -0.885309167697212, 0.9398159739359973, 1.477055173112182, -0.5653652160051996, 1.2667744594915047, -1.0417966450715803)
-    T, fetch_pose, box_pose = get_pose_gazebo(model_name)
+    # T, fetch_pose, box_pose = get_pose_gazebo(model_name)
     # translation
     trans = T[:3, 3]
     # quaternion in ros
