@@ -228,9 +228,10 @@ def get_track_ik_solution(seed_state, trans, rotated_qt):
         sol = ik_solver.get_ik(seed_state,
                         trans[0], trans[1], trans[2],
                         rotated_qt[0], rotated_qt[1], rotated_qt[2], rotated_qt[3])
-        """rospy.loginfo('Solution from IK:')
-        print(ik_solver.joint_names)                
-        print(sol)"""
+        if sol is None:
+            rospy.logerr('Solution from IK:')
+            print(ik_solver.joint_names)                
+            print(sol)
         if sol: break
         retry -= 1    
     return sol
@@ -249,9 +250,9 @@ def reset_objects():
 
 def get_solution(T):
     def get_track_ik_solution(seed_state, trans, rotated_qt):
-        retry = 30    
+        retry = 100    
         sol = None
-        while sol is None:
+        while retry:
             # multithread and random state
             sol = ik_solver.get_ik(seed_state,
                             trans[0], trans[1], trans[2],

@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-CS 6301 Homework 4 Programming
-Robot Control for Grasping
-"""
 import math
 from grasp import get_pose_gazebo, set_model_pose
 import time
@@ -11,6 +7,7 @@ import time
 import threading
 import rospy
 from gazebo_msgs.srv import SetModelState
+import numpy as np
 from gazebo_msgs.msg import ModelState
 
 
@@ -66,12 +63,12 @@ class CubeMover:
                     break
                 time.sleep(self.sleep)
 
-        def move_circular():
-            angle = t = 0 
-            radius = 0.2  
+        def move_circular(radius=0.2):
             angular_speed = self.velocity / radius
             cur_pose = self.get_pose()
             center = (cur_pose.position.x + radius, cur_pose.position.y)
+            angle = np.arctan2(cur_pose.position.x - center[0], cur_pose.position.y - center[1])
+            t = angle / angular_speed
             while self.running:
                 angle = angular_speed * t
                 self.box_pose.position.x = center[0] + (radius * math.cos(angle))
@@ -80,7 +77,7 @@ class CubeMover:
                 ret = self.set_pose()
                 if ret == -1:
                     break
-                t += self.sleep
+                t += self.sleep * 0.1
                 time.sleep(self.sleep)
 
         # Start the movement in a new thread
@@ -120,10 +117,10 @@ if __name__ == "__main__":
     Main function to run the code
     """
     # start_move()
-    mover = CubeMover(velocity=0.1)
+    mover = CubeMover(velocity=1)
     mover.reset()
     mover.start(motion="circiular")
-    time.sleep(10)
+    time.sleep(20)
     print(10)
     mover.stop()  # Call this to stop the movement
 
