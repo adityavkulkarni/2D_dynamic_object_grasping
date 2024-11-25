@@ -2,6 +2,7 @@
 *
 
 # Don't ignore Python files
+!*.py
 !grasp.py
 !move_cube_linear.py
 !gripper.py

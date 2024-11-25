@@ -295,7 +295,7 @@ if __name__ == "__main__":
     Main function to run the code
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('--iters', help='iterations', type=int, default=1)
+    parser.add_argument('--iters', help='iterations', type=int, default=10)
     parser.add_argument('--results', help='store results', type=bool, default=True)
     args = parser.parse_args()
 
