@@ -117,10 +117,10 @@ if __name__ == "__main__":
     Main function to run the code
     """
     # start_move()
-    mover = CubeMover(velocity=1)
+    mover = CubeMover()
     mover.reset()
-    mover.start(motion="circiular")
-    time.sleep(20)
+    mover.start()
+    time.sleep(30)
     print(10)
     mover.stop()  # Call this to stop the movement
 

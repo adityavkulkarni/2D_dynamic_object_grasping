@@ -4,8 +4,118 @@ import numpy as np
 import rospy
 from rosgraph_msgs.msg import Clock
 from predict_object_trajectory import HybridCurveFitter
-from get_cube_pose import get_cube_pose_and_timestamp
-from grasp import mat2quat, rotY, rotZ, ros_quat, IK, get_pose_gazebo
+# from get_cube_pose import get_cube_pose_and_timestamp
+from gazebo_msgs.srv import GetModelState
+from trac_ik_python.trac_ik import IK
+
+#from grasp import mat2quat, rotY, rotZ, ros_quat, IK, get_pose_gazebo
+from transforms3d.quaternions import mat2quat, quat2mat
+
+def ros_quat(tf_quat): #wxyz -> xyzw
+    quat = np.zeros(4)
+    quat[-1] = tf_quat[0]
+    quat[:-1] = tf_quat[1:]
+    return quat
+    
+    
+# rotation matrix about Y axis
+def rotY(roty):
+    RotY = np.array(
+        [
+            [np.cos(roty), 0, np.sin(roty), 0],
+            [0, 1, 0, 0],
+            [-np.sin(roty), 0, np.cos(roty), 0],
+            [0, 0, 0, 1],
+        ]
+    )
+    return RotY
+
+
+def rotX(rotx):
+    RotX = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, np.cos(rotx), -np.sin(rotx), 0],
+            [0, np.sin(rotx), np.cos(rotx), 0],
+            [0, 0, 0, 1],
+        ]
+    )
+    return RotX
+
+
+def rotZ(rotz):
+    RotZ = np.array(
+        [
+            [np.cos(rotz), -np.sin(rotz), 0, 0],
+            [np.sin(rotz), np.cos(rotz), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+    return RotZ
+
+
+# Convert quaternion and translation to a 4x4 tranformation matrix
+# See Appendix B.3 in Lynch and Park, Modern Robotics for the definition of quaternion
+def ros_qt_to_rt(rot, trans):
+    qt = np.zeros((4,), dtype=np.float32)
+    qt[0] = rot[3]
+    qt[1] = rot[0]
+    qt[2] = rot[1]
+    qt[3] = rot[2]
+    obj_T = np.eye(4)
+    obj_T[:3, :3] = quat2mat(qt)
+    obj_T[:3, 3] = trans
+
+    return obj_T
+
+
+# Convert a ROS pose message to a 4x4 tranformation matrix
+def ros_pose_to_rt(pose):
+    qarray = [0, 0, 0, 0]
+    qarray[0] = pose.orientation.x
+    qarray[1] = pose.orientation.y
+    qarray[2] = pose.orientation.z
+    qarray[3] = pose.orientation.w
+
+    t = [0, 0, 0]
+    t[0] = pose.position.x
+    t[1] = pose.position.y
+    t[2] = pose.position.z
+
+    return ros_qt_to_rt(qarray, t)
+
+
+def get_pose_gazebo(model_name, relative_entity_name=''):
+
+    def gms_client(model_name, relative_entity_name):
+        rospy.wait_for_service('/gazebo/get_model_state')
+        try:
+            gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+            resp1 = gms(model_name, relative_entity_name)
+            return resp1
+        except (rospy.ServiceException, e):
+            print("Service call failed: %s" % e)
+    
+    # query the object pose in Gazebo world T_wo
+    res = gms_client(model_name, relative_entity_name) 
+    T_wo = ros_pose_to_rt(res.pose)  
+    box_pose = res.pose
+    
+    # query fetch base link pose in Gazebo world T_wb
+    res = gms_client(model_name='fetch', relative_entity_name='base_link')
+    T_wb = ros_pose_to_rt(res.pose)
+    fetch_pose = res.pose
+
+    
+    ################ TO DO ##########################
+    # compute the object pose in robot base link T_bo
+    # use your code from homework 2
+    T_bw = np.linalg.inv(T_wb) 
+    # Compute T_bo = T_wb.T_wo
+    T_bo = np.dot(T_bw, T_wo)
+    ################ TO DO ##########################
+    return T_bo, fetch_pose, box_pose
 
 class FindIntercept:
     def __init__(self):
@@ -39,7 +149,8 @@ class FindIntercept:
 
         # Online learning: Update the hybrid model with each new data point
         for _ in range(100):
-            cube_pose, _ = get_cube_pose_and_timestamp()
+            # cube_pose, _ = get_cube_pose_and_timestamp()
+            _,_,cube_pose = get_pose_gazebo('demo_cube')
             t = self.get_gazebo_timestamp().to_sec()
             hybrid_rls_x.update(t, cube_pose.position.x)
             hybrid_rls_y.update(t, cube_pose.position.y)
@@ -166,11 +277,12 @@ class FindIntercept:
         # Printing the collected results
         print("Results collected from threads:")
         for thread_id, result in self.results.items():
-            print(f"Thread {thread_id}: {self.results}")
+            print(f"Thread {thread_id}: {results}")
 
 
 
+if __name__ == "__main__":
 
-fd = FindIntercept()
-fd.find_intercept()
+    fd = FindIntercept()
+    fd.find_intercept()
 
