@@ -296,7 +296,7 @@ if __name__ == "__main__":
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('--iters', help='iterations', type=int, default=1)
-    parser.add_argument('--results', help='store results', type=bool, default=False)
+    parser.add_argument('--results', help='store results', type=bool, default=True)
     args = parser.parse_args()
 
     # intialize ros node
@@ -459,7 +459,7 @@ if __name__ == "__main__":
             # move to above the cube
             group.execute(plan1[1].joint_trajectory)
             group.stop()
-
+            ts_move_z = get_gazebo_timestamp()
             joint_goal2 = sol2[1:]
             group.set_joint_value_target(joint_goal2)
             plan2 = group.plan()
@@ -507,6 +507,7 @@ if __name__ == "__main__":
             results.append(
                 {
                     "iteration": i+1, 
+                    "y_cur": y_cur,
                     "grasp_status": grasp_status,
                     "total_time": (ts_final2 - ts_final).to_sec(),
                     "solution_time_sim": (ts_sol2 - ts_sol1).to_sec(),
@@ -515,6 +516,7 @@ if __name__ == "__main__":
                     "grasp_pose_time": (ts_move_2 - ts_move_1).to_sec(),
                     "grasp_pose_estimate": (estimated_duration_grasp + estimated_duration_pose),
                     "offset": ((ts_move_2 - ts_move_1).to_sec() - (estimated_duration_grasp + estimated_duration_pose)),
+                    "z_descent_time": (ts_move_2 - ts_move_z).to_sec(),
                     "grip_time": (ts_grip - ts_move_2).to_sec(),
                     "trans_grasp":trans_grasp[1]
                 }
