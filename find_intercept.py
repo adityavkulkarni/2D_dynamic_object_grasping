@@ -125,6 +125,12 @@ class FindIntercept:
         self.results = {}
         self.lock = threading.Lock()
         self.ik_solver = IK("base_link", "wrist_roll_link")
+        lower_bound, upper_bound = self.ik_solver.get_joint_limits()
+        lower_bound = list(lower_bound)
+        upper_bound = list(upper_bound)
+        lower_bound[0] = 0.4
+        upper_bound[0] = 0.4
+        self.ik_solver.set_joint_limits(lower_bound, upper_bound)
 
     def get_gazebo_timestamp(self):
         rospy.wait_for_message('/clock', Clock)
@@ -212,12 +218,14 @@ class FindIntercept:
         seed_state = sol1
         trans_2 = [trans[0], trans[1], trans[2] + 0.2]
         sol2 = get_track_ik_solution(seed_state, trans_2, rotated_qt)
+        seed_state = sol2
+        sol3 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
 
         result = f"Result from thread {thread_id}"  # Simulated result
         # print(sol1, sol2)
         # Store result in a thread-safe way
         with self.lock:
-            self.results[thread_id] = (sol1, sol2)
+            self.results[thread_id] = (sol1, sol2, sol3)
         return (sol1, sol2)
 
     def find_intercept(self):
@@ -248,11 +256,11 @@ class FindIntercept:
             filtered_values = np.append(filtered_values, y_traj[-1])
 
         # Randomly sample from filtered values
-        num_samples = 5  # Adjust the number of samples as needed
+        num_samples = 1  # Adjust the number of samples as needed
         sampled_y = np.random.choice(filtered_values, size=num_samples, replace=False)
 
         print(sampled_y)
-
+        # return sampled_y.tolist()[-1]
         # Shared dictionary to store outputs
         results = {}
 

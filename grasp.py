@@ -436,15 +436,19 @@ if __name__ == "__main__":
         ts_sol_r1 = time.time()
 
         # Move directly above the cube
-        trans_1 = [trans[0], trans[1], trans[2] + 0.5]
+        fd = FindIntercept()
+        y_intercept = fd.find_intercept()
+        # trans_1 = [trans[0], trans[1], trans[2] + 0.5]
+        trans_1 = [trans[0], y_intercept, trans[2] + 0.5]
         # sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
         # seed_state = sol1
-        trans_2 = [trans[0], trans[1], trans[2] + 0.2]
+        # trans_2 = [trans[0], trans[1], trans[2] + 0.2]
+        trans_2 = [trans[0], y_intercept, trans[2] + 0.2]
         # sol2 = get_track_ik_solution(seed_state, trans_2, rotated_qt)
-        fd = FindIntercept()
-        fd.find_intercept()
+        
         sol1 = fd.results[0][0]
         sol2 = fd.results[0][1]
+        sol3 = fd.results[0][2]
         
         ts_sol2 = get_gazebo_timestamp()
         ts_sol_r2 = time.time()
@@ -486,8 +490,9 @@ if __name__ == "__main__":
 
         # Pick the cube
         seed_state = sol2
-        trans_3 = [trans[0], trans[1], trans[2] + 0.5]
-        sol3 = get_track_ik_solution(seed_state, trans_3, rotated_qt)
+        # trans_3 = [trans[0], trans[1], trans[2] + 0.5]
+        trans_3 = [trans[0], y_intercept, trans[2] + 0.5]
+        # sol3 = get_track_ik_solution(seed_state, trans_3, rotated_qt)
         joint_goal = sol3[1:]
         group.set_joint_value_target(joint_goal)
         plan3 = group.plan()
