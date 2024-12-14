@@ -121,7 +121,7 @@ def ros_pose_to_rt(pose):
 
 
 # Query pose of frames from the Gazebo environment
-def get_pose_gazebo(model_name, relative_entity_name=''):
+def get_pose_gazebo(model_name, relative_entity_name='', two=False):
 
     def gms_client(model_name, relative_entity_name):
         rospy.wait_for_service('/gazebo/get_model_state')
@@ -150,17 +150,21 @@ def get_pose_gazebo(model_name, relative_entity_name=''):
     # Compute T_bo = T_wb.T_wo
     T_bo = np.dot(T_bw, T_wo)
     ################ TO DO ##########################
-    return T_bo, fetch_pose, box_pose
+    if two:
+        return T_wo, T_bo, fetch_pose, box_pose
+
+    else:
+        return T_bo, fetch_pose, box_pose
     
 
 # publish tf for visualization
-def publish_tf(trans, qt, model_name):
-
-    br = tf.TransformBroadcaster()
-    rate = rospy.Rate(10.0)
-    while not rospy.is_shutdown():
-        br.sendTransform(trans, qt, rospy.Time.now(), model_name, 'base_link')
-        rate.sleep()
+# def publish_tf(trans, qt, model_name):
+#
+#     br = tf.TransformBroadcaster()
+#     rate = rospy.Rate(10.0)
+#     while not rospy.is_shutdown():
+#         br.sendTransform(trans, qt, rospy.Time.now(), model_name, 'base_link')
+#         rate.sleep()
     
     
 # Send a trajectory to controller
@@ -310,15 +314,15 @@ if __name__ == "__main__":
     
     box_pose.position.y = 0.4
     set_model_pose("demo_cube", box_pose)
-    T, fetch_pose, box_pose = get_pose_gazebo(model_name)
+    T_wo, T, fetch_pose, box_pose = get_pose_gazebo(model_name, two=True)
     # translation
     trans = T[:3, 3]
     # quaternion in ros
     qt = ros_quat(mat2quat(T[:3, :3]))
     
     # publish the cube tf for visualization
-    x = threading.Thread(target=publish_tf, args=(trans, qt, model_name))
-    x.start()
+    # x = threading.Thread(target=publish_tf, args=(trans, qt, model_name))
+    # x.start()
 
     # # Setup clients
     torso_action = FollowTrajectoryClient("torso_controller", ["torso_lift_joint"])
@@ -408,6 +412,7 @@ if __name__ == "__main__":
     (0.4, -0.47298796080251726, -0.885309167697212, 0.9398159739359973, 1.477055173112182, -0.5653652160051996, 1.2667744594915047, -1.0417966450715803)
     """
     print(sol_init)
+    sol_init = (0.4, -0.47298796080251726, -0.885309167697212, 0.9398159739359973, 1.477055173112182, -0.5653652160051996, 1.2667744594915047, -1.0417966450715803)
     joint_goal_init = sol_init[1:]
     group.set_joint_value_target(joint_goal_init)
     plan_init = group.plan()
@@ -420,7 +425,15 @@ if __name__ == "__main__":
     mover = CubeMover()
     # y_intercept = 0.198
     for i in range(args.iters):
-        set_cube_pose(box_pose, y=0.4)
+        """random_rot_angle = random.uniform(-np.pi / 2, np.pi / 2)
+        rot_matrix = rotZ(random_rot_angle)
+        T_wo_rot = np.dot(rot_matrix, T_wo)
+        rotated_qt = mat2quat(T_wo_rot[:3, :3])
+        box_pose.orientation.w = rotated_qt[0]
+        box_pose.orientation.x = rotated_qt[1]
+        box_pose.orientation.y = rotated_qt[2]
+        box_pose.orientation.z = rotated_qt[3]"""
+        set_cube_pose(box_pose, y=-0.4)
 
         # import multiprocessing
         # thread = multiprocessing.Process(target=start_move)
@@ -429,26 +442,30 @@ if __name__ == "__main__":
         T, fetch_pose, box_pose = get_pose_gazebo(model_name)
         trans = T[:3, 3]
         # trans = [trans[0], y_intercept-0.001, trans[2]]
-        rospy.loginfo(f"Iteration {i+1}: Cube postion = {trans}")
+        rospy.loginfo(f"Iteration {i+1}: Cube postion = {trans} Cube rotation: {mat2quat(T[:3, :3])} expected: {rotated_qt}")
 
         ts_final = get_gazebo_timestamp()
         ts_sol1 = get_gazebo_timestamp()
         ts_sol_r1 = time.time()
 
         # Move directly above the cube
-        fd = FindIntercept()
-        y_intercept = fd.find_intercept()
-        # trans_1 = [trans[0], trans[1], trans[2] + 0.5]
-        trans_1 = [trans[0], y_intercept, trans[2] + 0.5]
+        trans_1 = [trans[0], trans[1], trans[2] + 0.5]
         # sol1 = get_track_ik_solution(seed_state, trans_1, rotated_qt)
         # seed_state = sol1
-        # trans_2 = [trans[0], trans[1], trans[2] + 0.2]
-        trans_2 = [trans[0], y_intercept, trans[2] + 0.2]
+        trans_2 = [trans[0], trans[1], trans[2] + 0.2]
         # sol2 = get_track_ik_solution(seed_state, trans_2, rotated_qt)
-        
-        sol1 = fd.results[0][0]
-        sol2 = fd.results[0][1]
-        sol3 = fd.results[0][2]
+        fd = FindIntercept()
+        try:
+            fd.find_intercept()
+        except Exception as e:
+            print(e)
+            mover.stop()
+            group.stop()
+            continue
+
+        sol1 = fd.results[0]
+        sol2 = fd.results[1]
+        sol3 = fd.results[2]
         
         ts_sol2 = get_gazebo_timestamp()
         ts_sol_r2 = time.time()
@@ -490,8 +507,7 @@ if __name__ == "__main__":
 
         # Pick the cube
         seed_state = sol2
-        # trans_3 = [trans[0], trans[1], trans[2] + 0.5]
-        trans_3 = [trans[0], y_intercept, trans[2] + 0.5]
+        trans_3 = [trans[0], trans[1], trans[2] + 0.5]
         # sol3 = get_track_ik_solution(seed_state, trans_3, rotated_qt)
         joint_goal = sol3[1:]
         group.set_joint_value_target(joint_goal)
@@ -534,7 +550,7 @@ if __name__ == "__main__":
         group.execute(plan_init[1].joint_trajectory)
         group.stop()
         reset_objects()
-        time.sleep(2)
+        # time.sleep(2)
     
     for result in results:
         rospy.loginfo(f"RESULTS: ")
@@ -552,4 +568,3 @@ if __name__ == "__main__":
     if args.results:
         pd.DataFrame(results).to_csv("results.csv")
     rospy.signal_shutdown("")
-

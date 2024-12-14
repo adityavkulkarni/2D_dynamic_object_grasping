@@ -12,7 +12,7 @@ from gazebo_msgs.msg import ModelState
 
 
 class CubeMover:
-    def __init__(self, model_name='demo_cube', motion_type='linear', velocity=0.1):
+    def __init__(self, model_name='cube', motion_type='linear', velocity=0.1):
         self.model_name = model_name
         self.box_pose = None
         self.sleep = 0.01
@@ -53,7 +53,7 @@ class CubeMover:
 
         def move_linear():
             while self.running:
-                if self.box_pose.position.y <= -0.4 or self.box_pose.position.y > 0.4:
+                if self.box_pose.position.y <= -0.5 or self.box_pose.position.y >= 0.5:
                     self.iter -= 1
                     self.incr *= -1
 
