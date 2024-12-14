@@ -14,10 +14,18 @@ Follow these steps to set up the project:
    ```bash
    catkin_make
 3. Run the below commands in 3 separate terminals:
+   - For simple table:
    ```bash
    roslaunch fetch_gazebo simple_grasp.launch
    roslaunch fetch_moveit_config move_group.launch
    python3 grasp.py
+   ```
+   -For conveyor belt:
+   ```bash
+   roslaunch demo_world demo.launch
+   roslaunch fetch_moveit_config move_group.launch
+   python3 grasp.py
+   ```
 
 ---
 
